@@ -15,14 +15,10 @@ if (-not (Test-Path "$projectRoot\pubspec.yaml")) {
 Set-Location $projectRoot
 Write-Host "Project root: $projectRoot" -ForegroundColor Gray
 
-# 1. Terminate any running instance of matcast
+# 1. Terminate any running instance of matcast or zombie dns-sd
 Write-Host "`n[1/5] Checking for running instances..." -ForegroundColor Yellow
-$running = Get-Process -Name matcast -ErrorAction SilentlyContinue
-if ($running) {
-    Write-Host "Terminating active matcast process (PID $($running.Id))..." -ForegroundColor Yellow
-    taskkill /F /IM matcast.exe 2>$null
-    Start-Sleep -Seconds 1
-}
+Stop-Process -Name "matcast","dns-sd" -Force -ErrorAction SilentlyContinue
+Start-Sleep -Milliseconds 500
 
 # 2. Build Release Windows App
 Write-Host "`n[2/5] Building Flutter Windows (Release mode)..." -ForegroundColor Yellow
@@ -36,16 +32,13 @@ if (-not (Test-Path "$releaseDir\matcast.exe")) {
     Write-Error "Could not find matcast.exe in $releaseDir"
 }
 
-# 3. Verify and Copy Receiver Libs if missing
+# 3. Verify and Copy Receiver Libs
 Write-Host "`n[3/5] Verifying native receiver libraries..." -ForegroundColor Yellow
 $receiverLibsDir = "$projectRoot\windows\receiver_libs"
 if (Test-Path $receiverLibsDir) {
-    Get-ChildItem -Path "$receiverLibsDir\*.dll" | ForEach-Object {
+    Get-ChildItem -Path "$receiverLibsDir\*.dll" -Exclude "*.bak" | ForEach-Object {
         $dest = Join-Path $releaseDir $_.Name
-        if (-not (Test-Path $dest)) {
-            Write-Host "  Copying missing DLL: $($_.Name)" -ForegroundColor Gray
-            Copy-Item $_.FullName $dest -Force
-        }
+        Copy-Item $_.FullName $dest -Force
     }
 }
 
