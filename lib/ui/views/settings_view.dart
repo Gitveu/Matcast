@@ -326,6 +326,60 @@ class _SettingsViewState extends State<SettingsView> {
               ],
             ),
           ),
+          const SizedBox(height: 24),
+
+          // Section 5: About & Project Repository
+          Text(
+            strings.sectionAbout,
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            elevation: 1,
+            color: theme.colorScheme.surfaceContainer,
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.code),
+                  title: const Text(
+                    'Gitveu',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  subtitle: Text(strings.repositorySubtitle),
+                  trailing: TextButton.icon(
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(
+                          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                        ),
+                      ),
+                    ),
+                    onPressed: () {
+                      Process.run('cmd', ['/c', 'start', '', 'https://github.com/Gitveu/Matcast']);
+                    },
+                    icon: const Icon(Icons.open_in_new, size: 16),
+                    label: const Text(
+                      'github.com/Gitveu/Matcast',
+                      style: TextStyle(
+                        fontFamily: 'monospace',
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                  onTap: () {
+                    Process.run('cmd', ['/c', 'start', '', 'https://github.com/Gitveu/Matcast']);
+                  },
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     ),
