@@ -13,12 +13,27 @@ static void LogWindow(const std::string& msg) {
   }
 }
 
+static std::wstring GetSettingsFilePathW() {
+  wchar_t buffer[MAX_PATH];
+  if (::GetModuleFileNameW(nullptr, buffer, MAX_PATH) > 0) {
+    std::wstring path(buffer);
+    size_t last_slash = path.find_last_of(L"\\/");
+    if (last_slash != std::wstring::npos) {
+      std::wstring dir = path.substr(0, last_slash);
+      std::wstring fullPath = dir + L"\\matcast_settings.json";
+      std::ifstream check(fullPath);
+      if (check.is_open()) return fullPath;
+    }
+  }
+  return L"matcast_settings.json";
+}
+
 static void LoadStreamSettings(std::string& name, int& width, int& height, int& fps) {
   name = "Matcast";
   width = 1920;
   height = 1080;
   fps = 60;
-  std::ifstream f("matcast_settings.json");
+  std::ifstream f(GetSettingsFilePathW());
   if (f.is_open()) {
     std::string content((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
     size_t pos = content.find("\"receiverName\"");

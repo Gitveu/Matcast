@@ -141,8 +141,6 @@ class ReceiverProvider with ChangeNotifier {
 
   int _lastRenderUnits = 0;
   int _lastDecodeUnits = 0;
-  int _frameCount = 0;
-  DateTime _lastFrameTime = DateTime.now();
   DateTime _lastStatsNotify = DateTime.now();
 
   void _onNativeStatsUpdate({
@@ -164,7 +162,6 @@ class ReceiverProvider with ChangeNotifier {
 
     if (renderTimeUs != null && renderTimeUs > 0) {
       _lastRenderUnits = renderTimeUs;
-      _frameCount++;
 
       // render is in 100ns units: 10,000 units = 1ms. E.g. 233,300 -> 23.3ms.
       // Total end-to-end estimated latency including network transmission & buffer:
@@ -178,20 +175,10 @@ class ReceiverProvider with ChangeNotifier {
       // Add realistic network transmission delay (~10-14ms)
       int latency = baseLatency + 10;
 
-      // Calculate dynamic FPS
-      final now = DateTime.now();
-      final elapsed = now.difference(_lastFrameTime).inMilliseconds;
-      double currentFps = _state.stats.fps;
-      if (elapsed >= 1000) {
-        currentFps = (_frameCount * 1000.0 / elapsed).clamp(30.0, 60.0);
-        _frameCount = 0;
-        _lastFrameTime = now;
-      }
-
       _state = _state.copyWith(
         stats: _state.stats.copyWith(
           latencyMs: latency,
-          fps: currentFps > 0 ? currentFps : 60.0,
+          fps: settings.targetFps.toDouble(),
         ),
       );
     }
@@ -246,6 +233,13 @@ class ReceiverProvider with ChangeNotifier {
     if (fps != null) {
       settings.setFps(fps);
     }
+
+    _state = _state.copyWith(
+      stats: _state.stats.copyWith(
+        resolution: '${settings.targetWidth}x${settings.targetHeight}',
+        fps: settings.targetFps.toDouble(),
+      ),
+    );
 
     await NativeCastBridge.setNativeEngineName(
       settings.receiverName,

@@ -10,17 +10,18 @@ class SettingsView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final settings = context.watch<SettingsProvider>();
+    final strings = settings.tr(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Настройки Matcast'),
+        title: Text(strings.tabSettings),
       ),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
           // Section 1: General Settings
           Text(
-            'ОСНОВНЫЕ ПАРАМЕТРЫ',
+            strings.sectionGeneral,
             style: theme.textTheme.labelLarge?.copyWith(
               color: theme.colorScheme.primary,
               fontWeight: FontWeight.bold,
@@ -34,26 +35,27 @@ class SettingsView extends StatelessWidget {
               children: [
                 ListTile(
                   leading: const Icon(Icons.badge_outlined),
-                  title: const Text('Имя приёмника в сети'),
+                  title: Text(strings.receiverNameTitle),
                   subtitle: Text(settings.receiverName),
                   trailing: IconButton(
                     icon: const Icon(Icons.edit_outlined),
+                    tooltip: strings.editNameTitle,
                     onPressed: () => _showEditNameDialog(context, settings),
                   ),
                 ),
                 const Divider(height: 1),
                 SwitchListTile(
                   secondary: const Icon(Icons.power_settings_new),
-                  title: const Text('Автозапуск серверов при открытии'),
-                  subtitle: const Text('Автоматически поднимать mDNS и сетевые сокеты при старте приложения'),
+                  title: Text(strings.autoStartTitle),
+                  subtitle: Text(strings.autoStartSubtitle),
                   value: settings.autoStart,
                   onChanged: (val) => settings.setAutoStart(val),
                 ),
                 const Divider(height: 1),
                 SwitchListTile(
                   secondary: const Icon(Icons.fullscreen),
-                  title: const Text('Автоматический полный экран'),
-                  subtitle: const Text('Разворачивать окно на весь экран при начале трансляции'),
+                  title: Text(strings.autoFullscreenTitle),
+                  subtitle: Text(strings.autoFullscreenSubtitle),
                   value: settings.autoFullScreenOnConnect,
                   onChanged: (val) => settings.setAutoFullScreenOnConnect(val),
                 ),
@@ -64,7 +66,7 @@ class SettingsView extends StatelessWidget {
 
           // Section 2: Video & Hardware Acceleration
           Text(
-            'ВИДЕО И ДЕКОДИРОВАНИЕ',
+            strings.sectionVideo,
             style: theme.textTheme.labelLarge?.copyWith(
               color: theme.colorScheme.primary,
               fontWeight: FontWeight.bold,
@@ -78,16 +80,16 @@ class SettingsView extends StatelessWidget {
               children: [
                 SwitchListTile(
                   secondary: const Icon(Icons.memory),
-                  title: const Text('Аппаратное ускорение (GPU)'),
-                  subtitle: const Text('Использовать Direct3D 11 / DXVA2 для декодирования H.264/HEVC'),
+                  title: Text(strings.hwAccelTitle),
+                  subtitle: Text(strings.hwAccelSubtitle),
                   value: settings.hardwareDecoding,
                   onChanged: (val) => settings.setHardwareDecoding(val),
                 ),
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.aspect_ratio),
-                  title: const Text('Разрешение трансляции'),
-                  subtitle: const Text('Целевое разрешение для движка приёма потока'),
+                  title: Text(strings.resolutionTitle),
+                  subtitle: Text(strings.resolutionSubtitle),
                   trailing: DropdownButton<String>(
                     value: '${settings.targetWidth}x${settings.targetHeight}',
                     underline: const SizedBox(),
@@ -122,8 +124,8 @@ class SettingsView extends StatelessWidget {
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.slow_motion_video),
-                  title: const Text('Частота кадров (FPS)'),
-                  subtitle: const Text('Целевая частота обновления экрана'),
+                  title: Text(strings.fpsTitle),
+                  subtitle: Text(strings.fpsSubtitle),
                   trailing: SegmentedButton<int>(
                     segments: const [
                       ButtonSegment(value: 30, label: Text('30 FPS')),
@@ -138,8 +140,8 @@ class SettingsView extends StatelessWidget {
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.speed),
-                  title: const Text('Буфер потока низких задержек'),
-                  subtitle: const Text('32 МБ для минимального инпут-лага при зеркалировании'),
+                  title: Text(strings.bufferTitle),
+                  subtitle: Text(strings.bufferSubtitle),
                   trailing: Chip(
                     label: const Text('Low Latency'),
                     backgroundColor: theme.colorScheme.primaryContainer,
@@ -150,9 +152,9 @@ class SettingsView extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
-          // Section 3: Material 3 Appearance
+          // Section 3: Material 3 Appearance & Language
           Text(
-            'ВНЕШНИЙ ВИД (MATERIAL DESIGN 3)',
+            strings.sectionAppearance,
             style: theme.textTheme.labelLarge?.copyWith(
               color: theme.colorScheme.primary,
               fontWeight: FontWeight.bold,
@@ -162,35 +164,65 @@ class SettingsView extends StatelessWidget {
           Card(
             elevation: 1,
             color: theme.colorScheme.surfaceContainer,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  const Icon(Icons.brightness_4_outlined),
-                  const SizedBox(width: 16),
-                  Text(
-                    'Тема оформления',
-                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-                  ),
-                  const Spacer(),
-                  SegmentedButton<ThemeMode>(
-                    segments: const [
-                      ButtonSegment(value: ThemeMode.dark, label: Text('Тёмная'), icon: Icon(Icons.dark_mode)),
-                      ButtonSegment(value: ThemeMode.light, label: Text('Светлая'), icon: Icon(Icons.light_mode)),
-                      ButtonSegment(value: ThemeMode.system, label: Text('Системная'), icon: Icon(Icons.brightness_auto)),
+            child: Column(
+              children: [
+                // Theme
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.brightness_4_outlined),
+                      const SizedBox(width: 16),
+                      Text(
+                        strings.themeTitle,
+                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      const Spacer(),
+                      SegmentedButton<ThemeMode>(
+                        segments: [
+                          ButtonSegment(value: ThemeMode.dark, label: Text(strings.themeDark), icon: const Icon(Icons.dark_mode)),
+                          ButtonSegment(value: ThemeMode.light, label: Text(strings.themeLight), icon: const Icon(Icons.light_mode)),
+                          ButtonSegment(value: ThemeMode.system, label: Text(strings.themeSystem), icon: const Icon(Icons.brightness_auto)),
+                        ],
+                        selected: {settings.themeMode},
+                        onSelectionChanged: (set) => settings.setThemeMode(set.first),
+                      ),
                     ],
-                    selected: {settings.themeMode},
-                    onSelectionChanged: (set) => settings.setThemeMode(set.first),
                   ),
-                ],
-              ),
+                ),
+                const Divider(height: 1),
+                // Language
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.language),
+                      const SizedBox(width: 16),
+                      Text(
+                        strings.languageTitle,
+                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      const Spacer(),
+                      SegmentedButton<AppLanguage>(
+                        segments: [
+                          ButtonSegment(value: AppLanguage.system, label: Text(strings.langSystem)),
+                          ButtonSegment(value: AppLanguage.en, label: Text(strings.langEn)),
+                          ButtonSegment(value: AppLanguage.ru, label: Text(strings.langRu)),
+                        ],
+                        selected: {settings.appLanguage},
+                        onSelectionChanged: (set) => settings.setAppLanguage(set.first),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 24),
 
           // Section 4: Network Ports
           Text(
-            'СЕТЕВЫЕ ПОРТЫ СЕРВЕРОВ',
+            strings.sectionPorts,
             style: theme.textTheme.labelLarge?.copyWith(
               color: theme.colorScheme.primary,
               fontWeight: FontWeight.bold,
@@ -204,23 +236,16 @@ class SettingsView extends StatelessWidget {
               children: [
                 ListTile(
                   leading: const Icon(Icons.lan_outlined),
-                  title: const Text('Google Cast TLS Port'),
-                  subtitle: const Text('Стандартный порт протокола Google Cast V2'),
+                  title: Text(strings.castPortTitle),
+                  subtitle: const Text('Google Cast V2 TLS (TCP)'),
                   trailing: Text('${settings.castPort}', style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.bold)),
                 ),
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.lan_outlined),
-                  title: const Text('Miracast RTSP Port'),
-                  subtitle: const Text('Порт сигнализации Wi-Fi Display (WFD1.0)'),
+                  title: Text(strings.miracastPortTitle),
+                  subtitle: const Text('Wi-Fi Display RTSP (TCP)'),
                   trailing: Text('${settings.miracastPort}', style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.bold)),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.lan_outlined),
-                  title: const Text('RTP Streaming UDP Port'),
-                  subtitle: const Text('Порт приёма видеопотока MPEG-TS H.264'),
-                  trailing: Text('${settings.rtpPort}', style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
@@ -231,23 +256,24 @@ class SettingsView extends StatelessWidget {
   }
 
   void _showEditNameDialog(BuildContext context, SettingsProvider settings) {
+    final strings = settings.tr(context);
     final controller = TextEditingController(text: settings.receiverName);
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Имя приёмника'),
+        title: Text(strings.editNameTitle),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Название в шторке Android',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            hintText: strings.editNameHint,
+            border: const OutlineInputBorder(),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Отмена'),
+            child: Text(strings.btnCancel),
           ),
           FilledButton(
             onPressed: () {
@@ -257,7 +283,7 @@ class SettingsView extends StatelessWidget {
               }
               Navigator.of(ctx).pop();
             },
-            child: const Text('Сохранить'),
+            child: Text(strings.btnSave),
           ),
         ],
       ),

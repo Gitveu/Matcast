@@ -13,10 +13,11 @@ class DevicesView extends StatelessWidget {
     final provider = context.watch<ReceiverProvider>();
     final state = provider.state;
     final activeDevice = state.activeDevice;
+    final strings = provider.settings.tr(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Устройства и Активность'),
+        title: Text(strings.devicesTitle),
         actions: [
           if (provider.protocolLogs.isNotEmpty) ...[
             FilledButton.tonalIcon(
@@ -25,19 +26,19 @@ class DevicesView extends StatelessWidget {
                     '[${e.timestamp.toIso8601String()}] ${e.title}: ${e.data}').join('\n');
                 Clipboard.setData(ClipboardData(text: logText));
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Журнал скопирован в буфер обмена')),
+                  SnackBar(content: Text(strings.copiedSnackbar)),
                 );
               },
               icon: const Icon(Icons.copy_rounded, size: 18),
-              label: const Text('Копировать'),
+              label: Text(strings.btnCopy),
             ),
             const SizedBox(width: 8),
             IconButton(
-              tooltip: 'Очистить журнал',
+              tooltip: strings.btnClear,
               onPressed: () {
                 provider.clearProtocolLogs();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Журнал очищен')),
+                  SnackBar(content: Text(strings.btnClear)),
                 );
               },
               icon: const Icon(Icons.delete_outline),
@@ -56,7 +57,7 @@ class DevicesView extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               children: [
                 Text(
-                  'АКТИВНОЕ ПОДКЛЮЧЕНИЕ',
+                  strings.sectionActiveConnection,
                   style: theme.textTheme.labelLarge?.copyWith(
                     color: theme.colorScheme.primary,
                     fontWeight: FontWeight.bold,
@@ -90,14 +91,14 @@ class DevicesView extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Нет активных подключений',
+                                  strings.noActiveConnections,
                                   style: theme.textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Приёмник готов к трансляции. Выберите устройство на телефоне.',
+                                  strings.readyPrompt,
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     color: theme.colorScheme.onSurfaceVariant,
                                   ),
@@ -112,7 +113,7 @@ class DevicesView extends StatelessWidget {
 
                 const SizedBox(height: 32),
                 Text(
-                  'ИСТОРИЯ ПОДКЛЮЧЕНИЙ',
+                  strings.sectionHistory,
                   style: theme.textTheme.labelLarge?.copyWith(
                     color: theme.colorScheme.primary,
                     fontWeight: FontWeight.bold,
@@ -125,7 +126,7 @@ class DevicesView extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 24),
                     child: Center(
                       child: Text(
-                        'История пуста',
+                        strings.historyEmpty,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.outline,
                         ),
@@ -153,7 +154,7 @@ class DevicesView extends StatelessWidget {
                       Icon(Icons.terminal, color: theme.colorScheme.primary),
                       const SizedBox(width: 12),
                       Text(
-                        'Журнал обмена данными (Live Protocol)',
+                        strings.liveProtocol,
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -172,7 +173,7 @@ class DevicesView extends StatelessWidget {
                   child: provider.protocolLogs.isEmpty
                       ? Center(
                           child: Text(
-                            'События протокола отсутствуют.\nОжидание подключения Android-устройства...',
+                            strings.noProtocolEvents,
                             textAlign: TextAlign.center,
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: theme.colorScheme.outline,
@@ -278,7 +279,7 @@ class DevicesView extends StatelessWidget {
                     foregroundColor: theme.colorScheme.onErrorContainer,
                   ),
                   icon: const Icon(Icons.close, size: 16),
-                  label: const Text('Отключить'),
+                  label: Text(provider.settings.tr(context).btnDisconnect),
                   onPressed: () => provider.disconnectActiveDevice(),
                 ),
               ],

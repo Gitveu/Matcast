@@ -67,6 +67,7 @@ $defaultSettings = @"
   "hardwareDecoding": true,
   "autoFullScreenOnConnect": false,
   "themeMode": 0,
+  "language": "system",
   "targetWidth": 1920,
   "targetHeight": 1080,
   "targetFps": 60
