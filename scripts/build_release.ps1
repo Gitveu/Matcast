@@ -45,9 +45,10 @@ if (Test-Path $receiverLibsDir) {
 # 4. Prepare Staging Directory for Clean Portable Distribution
 Write-Host "`n[4/5] Preparing portable distribution package..." -ForegroundColor Yellow
 $distDir = "$projectRoot\dist\Matcast-Portable"
-if (!(Test-Path $distDir)) {
-    New-Item -ItemType Directory -Path $distDir -Force | Out-Null
+if (Test-Path $distDir) {
+    Remove-Item -Path $distDir -Recurse -Force
 }
+New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
 # Copy application files (excluding .pdb symbols and dev artifacts)
 Copy-Item "$releaseDir\matcast.exe" "$distDir\" -Force
@@ -68,6 +69,7 @@ $defaultSettings = @"
   "autoFullScreenOnConnect": false,
   "themeMode": 0,
   "language": "system",
+  "appLanguage": 0,
   "targetWidth": 1920,
   "targetHeight": 1080,
   "targetFps": 60
@@ -95,11 +97,22 @@ Set-Content -Path "$distDir\README.txt" -Value $readme -Encoding UTF8
 # 5. Create ZIP Archive
 Write-Host "`n[5/5] Creating ZIP archive..." -ForegroundColor Yellow
 $zipOutput = "$projectRoot\dist\Matcast-Windows-Portable.zip"
-if (Test-Path $zipOutput) {
-    Remove-Item $zipOutput -Force
+$tempZip = "$projectRoot\dist\Matcast-Windows-Portable.tmp.zip"
+if (Test-Path $tempZip) {
+    Remove-Item $tempZip -Force
 }
 
-Compress-Archive -Path "$distDir\*" -DestinationPath $zipOutput -CompressionLevel Optimal
+Compress-Archive -Path "$distDir\*" -DestinationPath $tempZip -CompressionLevel Optimal
+
+try {
+    if (Test-Path $zipOutput) {
+        Remove-Item $zipOutput -Force -ErrorAction Stop
+    }
+    Move-Item -Path $tempZip -Destination $zipOutput -Force
+} catch {
+    Write-Warning "Could not overwrite $zipOutput (file is open in another program). Saved as Matcast-Windows-Portable.tmp.zip"
+    $zipOutput = $tempZip
+}
 
 $zipInfo = Get-Item $zipOutput
 $zipSizeMb = [Math]::Round($zipInfo.Length / 1MB, 2)

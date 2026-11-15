@@ -44,6 +44,20 @@ class SettingsView extends StatelessWidget {
                   ),
                 ),
                 const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.language),
+                  title: Text(strings.languageTitle),
+                  trailing: SegmentedButton<AppLanguage>(
+                    segments: [
+                      ButtonSegment(value: AppLanguage.system, label: Text(strings.langSystem)),
+                      ButtonSegment(value: AppLanguage.en, label: Text(strings.langEn)),
+                      ButtonSegment(value: AppLanguage.ru, label: Text(strings.langRu)),
+                    ],
+                    selected: {settings.appLanguage},
+                    onSelectionChanged: (set) => settings.setAppLanguage(set.first),
+                  ),
+                ),
+                const Divider(height: 1),
                 SwitchListTile(
                   secondary: const Icon(Icons.power_settings_new),
                   title: Text(strings.autoStartTitle),
@@ -186,31 +200,6 @@ class SettingsView extends StatelessWidget {
                         ],
                         selected: {settings.themeMode},
                         onSelectionChanged: (set) => settings.setThemeMode(set.first),
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1),
-                // Language
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.language),
-                      const SizedBox(width: 16),
-                      Text(
-                        strings.languageTitle,
-                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                      const Spacer(),
-                      SegmentedButton<AppLanguage>(
-                        segments: [
-                          ButtonSegment(value: AppLanguage.system, label: Text(strings.langSystem)),
-                          ButtonSegment(value: AppLanguage.en, label: Text(strings.langEn)),
-                          ButtonSegment(value: AppLanguage.ru, label: Text(strings.langRu)),
-                        ],
-                        selected: {settings.appLanguage},
-                        onSelectionChanged: (set) => settings.setAppLanguage(set.first),
                       ),
                     ],
                   ),

@@ -27,6 +27,7 @@ void main() async {
   );
 
   windowManager.waitUntilReadyToShow(windowOptions, () async {
+    await windowManager.setTitle('Matcast');
     await windowManager.show();
     await windowManager.focus();
   });
