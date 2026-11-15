@@ -98,6 +98,7 @@ class ReceiverProvider with ChangeNotifier {
     int? height,
     int? fps,
     String? codec,
+    String? protocolType,
   }) {
     if (isStreaming && textureId != null) {
       try {
@@ -106,19 +107,27 @@ class ReceiverProvider with ChangeNotifier {
         windowManager.focus();
       } catch (_) {}
 
+      CastProtocol detectedProtocol = CastProtocol.googleCast;
+      if (protocolType != null && protocolType.toLowerCase().contains('airplay')) {
+        detectedProtocol = CastProtocol.airplay;
+      } else if (protocolType != null && protocolType.toLowerCase().contains('dlna')) {
+        detectedProtocol = CastProtocol.dlna;
+      }
+
+      final defaultLabel = (detectedProtocol == CastProtocol.airplay) ? 'Apple Device' : 'Android Device';
       final effectiveIp = (clientIp != null && clientIp.isNotEmpty) ? clientIp : _localIp;
       final alias = settings.getDeviceAlias(effectiveIp);
-      String displayName = alias ?? deviceName ?? 'Android Device';
-      if (alias == null && (displayName.isEmpty || displayName == effectiveIp || displayName.contains('(googlecast)'))) {
-        displayName = 'Android Device ($effectiveIp)';
+      String displayName = alias ?? deviceName ?? defaultLabel;
+      if (alias == null && (displayName.isEmpty || displayName == effectiveIp || displayName.contains('(googlecast)') || displayName.contains('(airplay)'))) {
+        displayName = '$defaultLabel ($effectiveIp)';
       }
 
       final activeDev = CastDevice(
         id: 'dev_${effectiveIp.replaceAll('.', '_')}',
         name: displayName,
         ipAddress: effectiveIp,
-        port: settings.castPort,
-        protocol: CastProtocol.googleCast,
+        port: (detectedProtocol == CastProtocol.airplay) ? 7000 : settings.castPort,
+        protocol: detectedProtocol,
         connectedAt: DateTime.now(),
       );
       final updatedHistory = List<CastDevice>.from(_state.history);

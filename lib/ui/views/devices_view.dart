@@ -309,7 +309,10 @@ class _DevicesViewState extends State<DevicesView> {
                 CircleAvatar(
                   radius: 24,
                   backgroundColor: theme.colorScheme.primary,
-                  child: const Icon(Icons.phone_android, color: Colors.white),
+                  child: Icon(
+                    device.protocol == CastProtocol.airplay ? Icons.phone_iphone : Icons.phone_android,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -399,7 +402,9 @@ class _DevicesViewState extends State<DevicesView> {
       margin: const EdgeInsets.only(bottom: 8),
       color: theme.colorScheme.surfaceContainer,
       child: ListTile(
-        leading: const Icon(Icons.devices_other),
+        leading: Icon(
+          device.protocol == CastProtocol.airplay ? Icons.phone_iphone : Icons.phone_android,
+        ),
         title: Text(device.name, style: const TextStyle(fontWeight: FontWeight.w600)),
         subtitle: Text('${device.ipAddress} • ${device.protocol.label}'),
         trailing: Row(

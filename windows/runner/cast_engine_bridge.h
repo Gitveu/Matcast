@@ -31,6 +31,8 @@ class CastEngineBridge {
 
   static void OnPromoteGui();
   void CallGoogleReceiverInitDirectly();
+  void CallAirplayReceiverInitDirectly();
+  void CallDlnaReceiverInitDirectly();
 
  private:
   CastEngineBridge();
@@ -38,6 +40,8 @@ class CastEngineBridge {
 
   HMODULE cast_module_ = nullptr;
   HMODULE google_module_ = nullptr;
+  HMODULE airplay_module_ = nullptr;
+  HMODULE dlna_module_ = nullptr;
   HWND hwnd_ = nullptr;
   UINT sync_msg_id_ = 0;
 
@@ -51,6 +55,8 @@ class CastEngineBridge {
   void (*set_promote_callback_fn_)(void (*)()) = nullptr;
   void (*register_plugin_fn_)(FlutterDesktopPluginRegistrarRef) = nullptr;
   void* (*google_receiver_init_fn_)(void*) = nullptr;
+  void* (*airplay_receiver_init_fn_)(void*) = nullptr;
+  void* (*dlna_receiver_init_fn_)(void*) = nullptr;
 
   bool is_running_ = false;
   std::string current_device_name_ = "";
