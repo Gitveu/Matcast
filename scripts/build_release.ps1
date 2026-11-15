@@ -128,6 +128,14 @@ Write-Host "Ready for distribution or copying to USB/flash drive." -ForegroundCo
 $userInstallDir = "D:\Progs\Matcast"
 if (Test-Path $userInstallDir) {
     Write-Host "`nSyncing updated files to $userInstallDir..." -ForegroundColor Cyan
+    Stop-Process -Name "matcast","dns-sd" -Force -ErrorAction SilentlyContinue
+    Start-Sleep -Milliseconds 300
     Copy-Item "$distDir\*" "$userInstallDir\" -Recurse -Force
-    Write-Host "Synchronized to $userInstallDir" -ForegroundColor Green
+    $srcHash = (Get-FileHash "$distDir\matcast.exe").Hash
+    $dstHash = (Get-FileHash "$userInstallDir\matcast.exe").Hash
+    if ($srcHash -eq $dstHash) {
+        Write-Host "Synchronized to $userInstallDir (SHA-256 verified: $dstHash)" -ForegroundColor Green
+    } else {
+        Write-Error "Hash mismatch after syncing to $userInstallDir!"
+    }
 }

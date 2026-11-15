@@ -73,7 +73,7 @@ class _DisplayViewState extends State<DisplayView> {
           ),
 
           // 2. Real-time Stream HUD overlay
-          if (state.showHud)
+          if (provider.settings.showStreamHud && state.showHud)
             Positioned(
               top: 24,
               left: 0,

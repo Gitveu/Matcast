@@ -18,6 +18,7 @@ class AppStrings {
   // Navigation
   String get tabScreen => isEn ? 'Screen' : 'Экран';
   String get tabDevices => isEn ? 'Devices' : 'Устройства';
+  String get tabProtocols => isEn ? 'Protocols' : 'Протоколы';
   String get tabSettings => isEn ? 'Settings' : 'Настройки';
 
   // Display View
@@ -80,6 +81,8 @@ class AppStrings {
   String get resolutionSubtitle => isEn ? 'Target resolution for stream receiver engine' : 'Целевое разрешение для движка приёма потока';
   String get fpsTitle => isEn ? 'Target Frame Rate (FPS)' : 'Частота кадров (FPS)';
   String get fpsSubtitle => isEn ? 'Target display refresh rate' : 'Целевая частота обновления экрана';
+  String get showHudTitle => isEn ? 'Stream Stats Overlay (HUD)' : 'Оверлей статистики потока (HUD)';
+  String get showHudSubtitle => isEn ? 'Show real-time FPS, bitrate, and latency on stream' : 'Отображать FPS, битрейт и задержку поверх видео';
 
   String get sectionAppearance => isEn ? 'APPEARANCE & LANGUAGE' : 'ВНЕШНИЙ ВИД И ЯЗЫК';
   String get themeTitle => isEn ? 'Color Theme' : 'Тема оформления';
@@ -93,7 +96,24 @@ class AppStrings {
 
   String get sectionPorts => isEn ? 'NETWORK PORTS' : 'СЕТЕВЫЕ ПОРТЫ СЕРВЕРОВ';
   String get castPortTitle => isEn ? 'Google Cast V2 Port' : 'Порт Google Cast V2';
+  String get airplayPortTitle => isEn ? 'Apple AirPlay RTSP Port' : 'Порт Apple AirPlay RTSP';
   String get miracastPortTitle => isEn ? 'Miracast RTSP Port' : 'Порт Miracast RTSP';
+
+  // Protocols View
+  String get protocolsTitle => isEn ? 'Protocols & Engines' : 'Серверы и Протоколы';
+  String get sectionProtocols => isEn ? 'ACTIVE STREAMING ENGINES' : 'СЕТЕВЫЕ СТЕКИ ТРАНСЛЯЦИИ';
+  String get googleCastDesc => isEn ? 'Used by Google Pixel, Android devices, Chrome' : 'Используется Google Pixel, Motorola, Nothing Phone и Android';
+  String get airplayDesc => isEn ? 'Used by iPhone, iPad, Mac (Screen Mirroring)' : 'Используется iPhone, iPad, Mac (Повтор экрана)';
+  String get miracastDesc => isEn ? 'Used by Samsung Smart View, Xiaomi (HyperOS), Huawei' : 'Используется Samsung Smart View, Xiaomi (HyperOS), Honor, Huawei';
+  String get discoveryServiceLabel => isEn ? 'Discovery Service' : 'Служба обнаружения';
+  String get controlPortLabel => isEn ? 'Control Port' : 'Порт управления';
+  String get cryptoCertLabel => isEn ? 'Encryption Certificate' : 'Сертификат шифрования';
+  String get supportedChannelsLabel => isEn ? 'Supported Channels' : 'Поддерживаемые каналы';
+  String get mirrorPortLabel => isEn ? 'Mirroring Port' : 'Порт зеркалирования';
+  String get audioProtocolLabel => isEn ? 'Audio Protocol' : 'Аудио протокол';
+  String get hwRenderingLabel => isEn ? 'Hardware Rendering' : 'Аппаратный рендеринг';
+  String get videoFormatLabel => isEn ? 'Video Format' : 'Формат видео';
+  String get connTypeLabel => isEn ? 'Connection Type' : 'Тип подключения';
 
   // Dialogs
   String get editNameTitle => isEn ? 'Edit Receiver Name' : 'Изменить имя приёмника';
