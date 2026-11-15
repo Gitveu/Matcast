@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../state/receiver_provider.dart';
@@ -237,7 +238,7 @@ class _SettingsViewState extends State<SettingsView> {
           ),
           const SizedBox(height: 24),
 
-          // Section 4: Network Ports & Protocol Toggles
+          // Section 4: Network Ports & Protocols
           Text(
             strings.sectionPorts,
             style: theme.textTheme.labelLarge?.copyWith(
@@ -255,35 +256,23 @@ class _SettingsViewState extends State<SettingsView> {
                   leading: const Icon(Icons.lan_outlined),
                   title: Text(strings.castPortTitle),
                   subtitle: const Text('Google Cast V2 TLS (TCP)'),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-                          ),
-                        ),
-                        child: Text(
-                          '${settings.castPort}',
-                          style: const TextStyle(
-                            fontFamily: 'monospace',
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                        ),
+                  trailing: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
                       ),
-                      const SizedBox(width: 12),
-                      Switch(
-                        value: settings.enableGoogleCast,
-                        onChanged: (val) {
-                          context.read<ReceiverProvider>().toggleGoogleCast(val);
-                        },
+                    ),
+                    child: Text(
+                      '${settings.castPort}',
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
                       ),
-                    ],
+                    ),
                   ),
                 ),
                 const Divider(height: 1),
@@ -291,35 +280,23 @@ class _SettingsViewState extends State<SettingsView> {
                   leading: const Icon(Icons.apple),
                   title: Text(strings.airplayPortTitle),
                   subtitle: const Text('Apple AirPlay RTSP / RAOP (TCP)'),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-                          ),
-                        ),
-                        child: const Text(
-                          '7000',
-                          style: TextStyle(
-                            fontFamily: 'monospace',
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                        ),
+                  trailing: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
                       ),
-                      const SizedBox(width: 12),
-                      Switch(
-                        value: settings.enableAirplay,
-                        onChanged: (val) {
-                          context.read<ReceiverProvider>().toggleAirplay(val);
-                        },
+                    ),
+                    child: const Text(
+                      '7000',
+                      style: TextStyle(
+                        fontFamily: 'monospace',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
                       ),
-                    ],
+                    ),
                   ),
                 ),
                 const Divider(height: 1),
@@ -327,35 +304,23 @@ class _SettingsViewState extends State<SettingsView> {
                   leading: const Icon(Icons.lan_outlined),
                   title: Text(strings.miracastPortTitle),
                   subtitle: const Text('Wi-Fi Display RTSP (TCP)'),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
-                          ),
-                        ),
-                        child: Text(
-                          '${settings.miracastPort}',
-                          style: const TextStyle(
-                            fontFamily: 'monospace',
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                        ),
+                  trailing: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
                       ),
-                      const SizedBox(width: 12),
-                      Switch(
-                        value: settings.enableMiracast,
-                        onChanged: (val) {
-                          context.read<ReceiverProvider>().toggleMiracast(val);
-                        },
+                    ),
+                    child: Text(
+                      '${settings.miracastPort}',
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ],
@@ -370,6 +335,7 @@ class _SettingsViewState extends State<SettingsView> {
   void _showEditNameDialog(BuildContext context, SettingsProvider settings) {
     final strings = settings.tr(context);
     final controller = TextEditingController(text: settings.receiverName);
+    final receiver = context.read<ReceiverProvider>();
 
     showDialog(
       context: context,
@@ -390,12 +356,49 @@ class _SettingsViewState extends State<SettingsView> {
           FilledButton(
             onPressed: () {
               final newName = controller.text.trim();
-              if (newName.isNotEmpty) {
-                context.read<ReceiverProvider>().updateReceiverName(newName);
-              }
               Navigator.of(ctx).pop();
+              if (newName.isNotEmpty && newName != settings.receiverName) {
+                receiver.updateReceiverName(newName);
+                _showRestartDialog(context, settings);
+              }
             },
             child: Text(strings.btnSave),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRestartDialog(BuildContext context, SettingsProvider settings) {
+    final strings = settings.tr(context);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.restart_alt, color: Colors.amber),
+            const SizedBox(width: 8),
+            Text(strings.restartRequiredTitle),
+          ],
+        ),
+        content: Text(strings.restartRequiredMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(strings.btnLater),
+          ),
+          FilledButton.icon(
+            icon: const Icon(Icons.refresh),
+            label: Text(strings.btnRestartNow),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              try {
+                if (Platform.isWindows) {
+                  Process.start(Platform.resolvedExecutable, []);
+                  exit(0);
+                }
+              } catch (_) {}
+            },
           ),
         ],
       ),
