@@ -6,6 +6,7 @@ import 'network_service.dart';
 
 class MdnsService {
   RawDatagramSocket? _rawMulticastSocket;
+  RawDatagramSocket? _unicastSendSocket;
   Timer? _announcementTimer;
   bool _isBroadcasting = false;
 
@@ -70,10 +71,40 @@ class MdnsService {
         reuseAddress: true,
       );
 
+      // Explicitly join multicast group on physical adapter
+      try {
+        final interfaces = await NetworkInterface.list(
+          includeLoopback: false,
+          type: InternetAddressType.IPv4,
+        );
+        for (final iface in interfaces) {
+          final name = iface.name.toLowerCase();
+          if (name.contains('vmnet') || name.contains('virtual') || name.contains('bluetooth')) {
+            continue;
+          }
+          for (final addr in iface.addresses) {
+            if (addr.address == localIp) {
+              try {
+                _rawMulticastSocket!.joinMulticast(InternetAddress('224.0.0.251'), iface);
+              } catch (_) {}
+            }
+          }
+        }
+      } catch (_) {}
       try {
         _rawMulticastSocket!.joinMulticast(InternetAddress('224.0.0.251'));
+      } catch (_) {}
+
+      // Dedicated sender socket bound strictly to local physical LAN IP
+      try {
+        _unicastSendSocket = await RawDatagramSocket.bind(
+          InternetAddress(localIp),
+          0,
+        );
+        _unicastSendSocket!.broadcastEnabled = true;
+        _unicastSendSocket!.multicastHops = 255;
       } catch (e) {
-        debugPrint('[mDNS] joinMulticast: $e');
+        debugPrint('[mDNS] _unicastSendSocket bind: $e');
       }
 
       _rawMulticastSocket!.listen((event) {
@@ -85,22 +116,27 @@ class MdnsService {
         }
       });
 
-      // Rapid initial burst (0ms, 120ms, 250ms) for instantaneous discovery on phones
-      _sendDnsAnnouncement(displayName, cleanName, formattedId, localIp, castPort, ttl: 30);
-      Future.delayed(const Duration(milliseconds: 120), () {
+      // Rapid initial burst (0ms, 150ms, 400ms, 800ms) for instantaneous discovery on phones
+      _sendDnsAnnouncement(displayName, cleanName, formattedId, localIp, castPort, ttl: 120);
+      Future.delayed(const Duration(milliseconds: 150), () {
         if (_isBroadcasting) {
-          _sendDnsAnnouncement(displayName, cleanName, formattedId, localIp, castPort, ttl: 30);
+          _sendDnsAnnouncement(displayName, cleanName, formattedId, localIp, castPort, ttl: 120);
         }
       });
-      Future.delayed(const Duration(milliseconds: 250), () {
+      Future.delayed(const Duration(milliseconds: 400), () {
         if (_isBroadcasting) {
-          _sendDnsAnnouncement(displayName, cleanName, formattedId, localIp, castPort, ttl: 30);
+          _sendDnsAnnouncement(displayName, cleanName, formattedId, localIp, castPort, ttl: 120);
+        }
+      });
+      Future.delayed(const Duration(milliseconds: 800), () {
+        if (_isBroadcasting) {
+          _sendDnsAnnouncement(displayName, cleanName, formattedId, localIp, castPort, ttl: 120);
         }
       });
 
-      // Steady state: broadcast every 1.5 seconds with short 30s TTL
-      _announcementTimer = Timer.periodic(const Duration(milliseconds: 1500), (_) {
-        _sendDnsAnnouncement(displayName, cleanName, formattedId, localIp, castPort, ttl: 30);
+      // Steady state: broadcast every 12 seconds with realistic 120s TTL (prevents Android mDNS flood throttling)
+      _announcementTimer = Timer.periodic(const Duration(seconds: 12), (_) {
+        _sendDnsAnnouncement(displayName, cleanName, formattedId, localIp, castPort, ttl: 120);
       });
 
       _isBroadcasting = true;
@@ -121,7 +157,9 @@ class MdnsService {
     int port,
   ) {
     try {
-      final packet = _buildCastMdnsPacket(displayName, friendlyName, deviceId, localIp, port, ttl: 30);
+      final packet = _buildCastMdnsPacket(displayName, friendlyName, deviceId, localIp, port, ttl: 120);
+      // Respond directly to the querying client over unicast (bypasses router multicast filtering)
+      _unicastSendSocket?.send(packet, datagram.address, datagram.port);
       _rawMulticastSocket?.send(packet, datagram.address, datagram.port);
     } catch (_) {}
   }
@@ -132,32 +170,23 @@ class MdnsService {
     String deviceId,
     String localIp,
     int port, {
-    int ttl = 30,
+    int ttl = 120,
   }) async {
-    if (_rawMulticastSocket == null) return;
+    final packet = _buildCastMdnsPacket(displayName, friendlyName, deviceId, localIp, port, ttl: ttl);
 
     try {
-      final packet = _buildCastMdnsPacket(displayName, friendlyName, deviceId, localIp, port, ttl: ttl);
+      // 1. Multicast via dedicated LAN-bound socket
+      _unicastSendSocket?.send(packet, InternetAddress('224.0.0.251'), 5353);
 
-      // 1. Multicast Group
-      _rawMulticastSocket!.send(packet, InternetAddress('224.0.0.251'), 5353);
-
-      // 2. Primary Subnet Broadcast
+      // 2. Primary Subnet Directed Broadcast (ensures Wi-Fi devices receive even if IGMP snooping is on)
       final parts = localIp.split('.');
       if (parts.length == 4) {
         final subnetBroadcast = '${parts[0]}.${parts[1]}.${parts[2]}.255';
-        _rawMulticastSocket!.send(packet, InternetAddress(subnetBroadcast), 5353);
+        _unicastSendSocket?.send(packet, InternetAddress(subnetBroadcast), 5353);
       }
 
-      // 3. Send to all detected active local adapters
-      final allIps = await NetworkService.getLocalIpAddresses();
-      for (final ip in allIps) {
-        final p = ip.split('.');
-        if (p.length == 4) {
-          final bcast = '${p[0]}.${p[1]}.${p[2]}.255';
-          _rawMulticastSocket!.send(packet, InternetAddress(bcast), 5353);
-        }
-      }
+      // 3. Multicast via raw socket
+      _rawMulticastSocket?.send(packet, InternetAddress('224.0.0.251'), 5353);
     } catch (e) {
       debugPrint('[mDNS] Announcement error: $e');
     }
@@ -266,19 +295,27 @@ class MdnsService {
     writeDnsName(instanceName);
     builder.add([0x00, 0x10]); // Type: TXT
     builder.add([0x80, 0x01]); // Class: IN, Flush
-    builder.add(ttlBytes);
+    final txtTtl = ttl > 0 ? 4500 : 0;
+    builder.add([
+      (txtTtl >> 24) & 0xff,
+      (txtTtl >> 16) & 0xff,
+      (txtTtl >> 8) & 0xff,
+      txtTtl & 0xff,
+    ]);
 
     final txtEntries = [
       'id=$deviceId',
-      've=5',
-      'ca=201221',
-      'st=0',
-      'md=Google Cast',
-      'fn=$friendlyName',
-      'ic=/setup/icon.png',
       'cd=5b4a6cbdf025461e8be02046dc040aca',
-      'bs=FFFFFFFFEEF0',
+      'rm=',
+      've=05',
+      'md=Google Cast',
+      'ic=/setup/icon.png',
+      'fn=$friendlyName',
+      'ca=266757',
+      'st=0',
       'nf=1',
+      'ct=F9A7E5',
+      'rs=',
     ];
 
     final txtData = BytesBuilder();
@@ -327,6 +364,10 @@ class MdnsService {
     try {
       _rawMulticastSocket?.close();
       _rawMulticastSocket = null;
+    } catch (_) {}
+    try {
+      _unicastSendSocket?.close();
+      _unicastSendSocket = null;
     } catch (_) {}
 
     _isBroadcasting = false;
