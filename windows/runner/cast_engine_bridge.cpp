@@ -60,6 +60,36 @@ static bool HookModuleIAT(HMODULE target_module, const char* target_dll_name, vo
   return hooked;
 }
 
+static bool IsLocalIpAddress(const std::string& ip) {
+  if (ip.empty() || ip == "127.0.0.1" || ip == "::1" || ip == "0.0.0.0") return true;
+  if (ip.rfind("169.254.", 0) == 0) return true;
+
+  char hostname[256] = {0};
+  if (::gethostname(hostname, sizeof(hostname)) == 0) {
+    addrinfo hints{};
+    hints.ai_family = AF_UNSPEC;
+    addrinfo* res = nullptr;
+    if (::getaddrinfo(hostname, nullptr, &hints, &res) == 0) {
+      for (addrinfo* p = res; p != nullptr; p = p->ai_next) {
+        char buf[INET6_ADDRSTRLEN] = {0};
+        if (p->ai_family == AF_INET) {
+          auto* sin = reinterpret_cast<sockaddr_in*>(p->ai_addr);
+          ::inet_ntop(AF_INET, &(sin->sin_addr), buf, sizeof(buf));
+        } else if (p->ai_family == AF_INET6) {
+          auto* sin6 = reinterpret_cast<sockaddr_in6*>(p->ai_addr);
+          ::inet_ntop(AF_INET6, &(sin6->sin6_addr), buf, sizeof(buf));
+        }
+        if (ip == buf) {
+          ::freeaddrinfo(res);
+          return true;
+        }
+      }
+      ::freeaddrinfo(res);
+    }
+  }
+  return false;
+}
+
 static SOCKET WSAAPI HookedAccept(SOCKET s, struct sockaddr* addr, int* addrlen) {
   if (!g_real_accept) {
     HMODULE ws2 = ::GetModuleHandleA("ws2_32.dll");
@@ -74,6 +104,26 @@ static SOCKET WSAAPI HookedAccept(SOCKET s, struct sockaddr* addr, int* addrlen)
   SOCKET client = g_real_accept(s, addr, addrlen);
   if (client == INVALID_SOCKET) {
     return INVALID_SOCKET;
+  }
+
+  // Check the port of the listening socket s
+  sockaddr_storage local_ss{};
+  int local_len = sizeof(local_ss);
+  int listening_port = 0;
+  if (::getsockname(s, reinterpret_cast<sockaddr*>(&local_ss), &local_len) == 0) {
+    if (local_ss.ss_family == AF_INET) {
+      auto* sin = reinterpret_cast<sockaddr_in*>(&local_ss);
+      listening_port = ntohs(sin->sin_port);
+    } else if (local_ss.ss_family == AF_INET6) {
+      auto* sin6 = reinterpret_cast<sockaddr_in6*>(&local_ss);
+      listening_port = ntohs(sin6->sin6_port);
+    }
+  }
+
+  // ONLY protect Google Cast session ports (8009 / 8008).
+  // All internal data, media, and streaming sockets must pass freely!
+  if (listening_port != 8009 && listening_port != 8008) {
+    return client;
   }
 
   // Identify client IP
@@ -99,19 +149,22 @@ static SOCKET WSAAPI HookedAccept(SOCKET s, struct sockaddr* addr, int* addrlen)
   }
 
   std::string client_ip(ip_buf);
+
+  // Local loopback or local host interface connections must never be rejected
+  if (IsLocalIpAddress(client_ip)) {
+    return client;
+  }
+
   if (CastEngineBridge::GetInstance().IsBusyReject(client_ip)) {
-    LogBridge("[HookedAccept] REJECTED incoming connection from " + client_ip +
-              " because active stream is locked to " +
+    LogBridge("[HookedAccept] REJECTED incoming connection on port " + std::to_string(listening_port) +
+              " from " + client_ip + " because active stream is locked to " +
               CastEngineBridge::GetInstance().GetActiveClientIp());
     ::closesocket(client);
     ::WSASetLastError(WSAECONNREFUSED);
     return INVALID_SOCKET;
   }
 
-  if (!client_ip.empty() && client_ip != "127.0.0.1" && client_ip != "::1") {
-    LogBridge("[HookedAccept] Accepted connection from " + client_ip);
-  }
-
+  LogBridge("[HookedAccept] Accepted connection on port " + std::to_string(listening_port) + " from " + client_ip);
   return client;
 }
 
@@ -160,7 +213,7 @@ bool CastEngineBridge::IsBusyReject(const std::string& incoming_ip) {
   if (active_stream_ip_.empty()) {
     return false;
   }
-  if (incoming_ip.empty() || incoming_ip == "127.0.0.1" || incoming_ip == "::1") {
+  if (IsLocalIpAddress(incoming_ip)) {
     return false;
   }
   if (incoming_ip == active_stream_ip_) {
@@ -217,7 +270,6 @@ bool CastEngineBridge::Initialize(HWND top_hwnd, flutter::FlutterEngine* engine)
     return false;
   }
   LogBridge("[CastEngineBridge] Loaded cast_plugin.dll successfully.");
-  EnsureAcceptHookInstalled(cast_module_, "cast_plugin.dll");
 
   set_hwnd_fn_ = reinterpret_cast<void (*)(HWND)>(
       ::GetProcAddress(cast_module_, "CastHostSetJsonSyncTargetHwnd"));
