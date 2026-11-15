@@ -26,16 +26,6 @@ class MdnsService {
     _isStreamingActive = isStreaming;
     _activeStreamingIp = isStreaming ? activeIp : null;
     debugPrint('[mDNS] setStreamingState: isStreaming=$isStreaming, activeIp=$activeIp');
-    if (_isBroadcasting && _lastDisplayName != null) {
-      _sendDnsAnnouncement(
-        _lastDisplayName!,
-        _lastFriendlyName ?? _lastDisplayName!,
-        _lastDeviceId ?? 'MATCAST',
-        _lastLocalIp ?? '127.0.0.1',
-        _lastCastPort ?? 8009,
-        ttl: 120,
-      );
-    }
   }
 
   MdnsService() {
@@ -177,11 +167,6 @@ class MdnsService {
     int port,
   ) {
     try {
-      final clientIp = datagram.address.address;
-      // If actively streaming with Phone 1, do not advertise to other devices to prevent them connecting
-      if (_isStreamingActive && _activeStreamingIp != null && clientIp != _activeStreamingIp && clientIp != localIp) {
-        return;
-      }
       final packet = _buildCastMdnsPacket(displayName, friendlyName, deviceId, localIp, port, ttl: 120);
       // Respond directly to the querying client over unicast (bypasses router multicast filtering)
       _unicastSendSocket?.send(packet, datagram.address, datagram.port);
@@ -337,10 +322,10 @@ class MdnsService {
       'ic=/setup/icon.png',
       'fn=$friendlyName',
       'ca=266757',
-      'st=${_isStreamingActive ? '1' : '0'}',
+      'st=0',
       'nf=1',
       'ct=F9A7E5',
-      _isStreamingActive ? 'rs=In Use' : 'rs=',
+      'rs=',
     ];
 
     final txtData = BytesBuilder();
