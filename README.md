@@ -92,3 +92,6 @@ Settings are stored in `matcast_settings.json` next to the executable:
 - `miracastPort` — Miracast RTSP listening port (default `7236`).
 - `hardwareDecoding` — Enable GPU hardware acceleration for video decoding.
 - `targetFps` / `targetWidth` / `targetHeight` — Stream resolution and framerate targets.
+
+## Credits
+- [keqdroid](https://github.com/Lemonochka/keqdroid) ([@Lemonochka](https://github.com/Lemonochka)) and [vysh](https://github.com/vyto4ka/vysh) ([@vyto4ka](https://github.com/vyto4ka)) for design idea
