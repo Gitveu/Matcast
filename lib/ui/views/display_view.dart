@@ -82,6 +82,9 @@ class _DisplayViewState extends State<DisplayView> {
                 child: StreamHud(
                   stats: state.stats,
                   deviceName: activeDevice?.name ?? 'Android',
+                  streamDuration: activeDevice != null
+                      ? DateTime.now().difference(activeDevice.connectedAt)
+                      : null,
                   onClose: () => provider.toggleHud(),
                 ),
               ),

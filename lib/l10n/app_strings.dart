@@ -98,6 +98,10 @@ class AppStrings {
   // Dialogs
   String get editNameTitle => isEn ? 'Edit Receiver Name' : 'Изменить имя приёмника';
   String get editNameHint => isEn ? 'e.g. Living-Room-PC' : 'например, Matcast-PC';
+  String get renameDeviceTitle => isEn ? 'Rename Device' : 'Переименовать устройство';
+  String get renameDeviceHint => isEn ? 'e.g. My Phone, Living Room Tablet' : 'например, Мой телефон, Планшет';
+  String get durationLabel => isEn ? 'Duration' : 'Длительность';
+  String get connectedLabel => isEn ? 'Connected' : 'Подключено';
   String get btnCancel => isEn ? 'Cancel' : 'Отмена';
   String get btnSave => isEn ? 'Save' : 'Сохранить';
   String get copiedSnackbar => isEn ? 'Logs copied to clipboard' : 'Журнал скопирован в буфер обмена';

@@ -3,6 +3,31 @@ import 'package:crypto/crypto.dart';
 import 'dart:convert';
 
 class NetworkService {
+  static const _virtualKeywords = [
+    'vmnet',
+    'virtual',
+    'vbox',
+    'vethernet',
+    'wsl',
+    'hyper-v',
+    'tailscale',
+    'wireguard',
+    'zerotier',
+    'tap',
+    'npcap',
+    'bluetooth',
+    'docker',
+    'loopback',
+  ];
+
+  static bool _isVirtualInterface(String name) {
+    final lower = name.toLowerCase();
+    for (final kw in _virtualKeywords) {
+      if (lower.contains(kw)) return true;
+    }
+    return false;
+  }
+
   static Future<List<String>> getLocalIpAddresses() async {
     final ips = <String>[];
     try {
@@ -11,11 +36,7 @@ class NetworkService {
         type: InternetAddressType.IPv4,
       );
       for (final interface in interfaces) {
-        final name = interface.name.toLowerCase();
-        if (name.contains('vmnet') ||
-            name.contains('virtual') ||
-            name.contains('vethernet') ||
-            name.contains('bluetooth')) {
+        if (_isVirtualInterface(interface.name)) {
           continue;
         }
         for (final address in interface.addresses) {
@@ -27,29 +48,31 @@ class NetworkService {
           }
         }
       }
-    } catch (_) {
-      ips.add('192.168.10.11');
-    }
+    } catch (_) {}
     return ips;
   }
 
   static Future<String> getPrimaryLocalIp() async {
+    // 1. First attempt: Ask OS kernel which local address routes outbound
+    try {
+      final s = await Socket.connect('8.8.8.8', 53, timeout: const Duration(milliseconds: 600));
+      final ip = s.address.address;
+      await s.close();
+      if (_isValidLanIp(ip)) {
+        return ip;
+      }
+    } catch (_) {}
+
+    // 2. Iterate network interfaces, prioritizing physical non-virtual LAN adapters
     try {
       final interfaces = await NetworkInterface.list(
         includeLoopback: false,
         type: InternetAddressType.IPv4,
       );
 
-      // 1. Search for primary physical Ethernet / Wi-Fi
+      // Pass 1: Physical non-virtual adapters
       for (final iface in interfaces) {
-        final name = iface.name.toLowerCase();
-        if (name.contains('vmnet') ||
-            name.contains('virtual') ||
-            name.contains('vethernet') ||
-            name.contains('bluetooth')) {
-          continue;
-        }
-
+        if (_isVirtualInterface(iface.name)) continue;
         for (final addr in iface.addresses) {
           final ip = addr.address;
           if (_isValidLanIp(ip)) {
@@ -58,27 +81,34 @@ class NetworkService {
         }
       }
 
-      // 2. Secondary pass
+      // Pass 2: Any adapter with valid private LAN IP
       for (final iface in interfaces) {
         for (final addr in iface.addresses) {
           final ip = addr.address;
-          if (_isValidLanIp(ip) && !ip.startsWith('192.168.207.') && !ip.startsWith('192.168.50.')) {
+          if (_isValidLanIp(ip)) {
             return ip;
+          }
+        }
+      }
+
+      // Pass 3: First IPv4 address
+      for (final iface in interfaces) {
+        for (final addr in iface.addresses) {
+          if (!addr.isLoopback && addr.type == InternetAddressType.IPv4) {
+            return addr.address;
           }
         }
       }
     } catch (_) {}
 
-    return '192.168.10.11';
+    return '127.0.0.1';
   }
 
   static bool _isValidLanIp(String ip) {
     if (ip.startsWith('127.') ||
         ip.startsWith('169.254.') ||
         ip == '0.0.0.0' ||
-        ip == '8.8.8.8' ||
-        ip.startsWith('192.168.207.') ||
-        ip.startsWith('192.168.50.')) {
+        ip == '255.255.255.255') {
       return false;
     }
     return ip.startsWith('192.168.') ||

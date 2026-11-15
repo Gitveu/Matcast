@@ -123,3 +123,11 @@ Write-Host "==========================================" -ForegroundColor Green
 Write-Host "Archive Path: $($zipInfo.FullName)" -ForegroundColor White
 Write-Host "Archive Size: $zipSizeMb MB" -ForegroundColor White
 Write-Host "Ready for distribution or copying to USB/flash drive." -ForegroundColor Green
+
+# Sync to local user portable folder if it exists
+$userInstallDir = "D:\Progs\Matcast"
+if (Test-Path $userInstallDir) {
+    Write-Host "`nSyncing updated files to $userInstallDir..." -ForegroundColor Cyan
+    Copy-Item "$distDir\*" "$userInstallDir\" -Recurse -Force
+    Write-Host "Synchronized to $userInstallDir" -ForegroundColor Green
+}
