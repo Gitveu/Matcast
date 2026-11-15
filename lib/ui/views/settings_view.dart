@@ -2,9 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../state/receiver_provider.dart';
 import '../../state/settings_provider.dart';
+import '../widgets/smooth_scroll.dart';
 
-class SettingsView extends StatelessWidget {
+class SettingsView extends StatefulWidget {
   const SettingsView({super.key});
+
+  @override
+  State<SettingsView> createState() => _SettingsViewState();
+}
+
+class _SettingsViewState extends State<SettingsView> {
+  final SmoothScrollController _scrollController = SmoothScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,9 +30,14 @@ class SettingsView extends StatelessWidget {
       appBar: AppBar(
         title: Text(strings.tabSettings),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
-        children: [
+      body: Scrollbar(
+        controller: _scrollController,
+        thumbVisibility: true,
+        child: ListView(
+          controller: _scrollController,
+          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+          padding: const EdgeInsets.all(24),
+          children: [
           // Section 1: General Settings
           Text(
             strings.sectionGeneral,
@@ -218,7 +237,7 @@ class SettingsView extends StatelessWidget {
           ),
           const SizedBox(height: 24),
 
-          // Section 4: Network Ports
+          // Section 4: Network Ports & Protocol Toggles
           Text(
             strings.sectionPorts,
             style: theme.textTheme.labelLarge?.copyWith(
@@ -236,27 +255,119 @@ class SettingsView extends StatelessWidget {
                   leading: const Icon(Icons.lan_outlined),
                   title: Text(strings.castPortTitle),
                   subtitle: const Text('Google Cast V2 TLS (TCP)'),
-                  trailing: Text('${settings.castPort}', style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.bold)),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        child: Text(
+                          '${settings.castPort}',
+                          style: const TextStyle(
+                            fontFamily: 'monospace',
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Switch(
+                        value: settings.enableGoogleCast,
+                        onChanged: (val) {
+                          final receiver = context.read<ReceiverProvider>();
+                          settings.setEnableGoogleCast(val);
+                          receiver.stopReceiver().then((_) => receiver.startReceiver());
+                        },
+                      ),
+                    ],
+                  ),
                 ),
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.apple),
                   title: Text(strings.airplayPortTitle),
                   subtitle: const Text('Apple AirPlay RTSP / RAOP (TCP)'),
-                  trailing: const Text('7000', style: TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.bold)),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        child: const Text(
+                          '7000',
+                          style: TextStyle(
+                            fontFamily: 'monospace',
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Switch(
+                        value: settings.enableAirplay,
+                        onChanged: (val) {
+                          settings.setEnableAirplay(val);
+                        },
+                      ),
+                    ],
+                  ),
                 ),
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.lan_outlined),
                   title: Text(strings.miracastPortTitle),
                   subtitle: const Text('Wi-Fi Display RTSP (TCP)'),
-                  trailing: Text('${settings.miracastPort}', style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.bold)),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        child: Text(
+                          '${settings.miracastPort}',
+                          style: const TextStyle(
+                            fontFamily: 'monospace',
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Switch(
+                        value: settings.enableMiracast,
+                        onChanged: (val) {
+                          final receiver = context.read<ReceiverProvider>();
+                          settings.setEnableMiracast(val);
+                          receiver.stopReceiver().then((_) => receiver.startReceiver());
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
         ],
       ),
+    ),
     );
   }
 
