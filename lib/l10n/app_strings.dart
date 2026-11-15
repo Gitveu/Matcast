@@ -18,7 +18,6 @@ class AppStrings {
   // Navigation
   String get tabScreen => isEn ? 'Screen' : 'Экран';
   String get tabDevices => isEn ? 'Devices' : 'Устройства';
-  String get tabProtocols => isEn ? 'Protocols' : 'Протоколы';
   String get tabSettings => isEn ? 'Settings' : 'Настройки';
 
   // Display View
@@ -94,26 +93,10 @@ class AppStrings {
   String get langEn => 'English';
   String get langRu => 'Русский';
 
-  String get sectionPorts => isEn ? 'NETWORK PORTS' : 'СЕТЕВЫЕ ПОРТЫ СЕРВЕРОВ';
+  String get sectionPorts => isEn ? 'NETWORK PORTS & ENGINES' : 'СЕТЕВЫЕ ПОРТЫ И ПРОТОКОЛЫ';
   String get castPortTitle => isEn ? 'Google Cast V2 Port' : 'Порт Google Cast V2';
   String get airplayPortTitle => isEn ? 'Apple AirPlay RTSP Port' : 'Порт Apple AirPlay RTSP';
   String get miracastPortTitle => isEn ? 'Miracast RTSP Port' : 'Порт Miracast RTSP';
-
-  // Protocols View
-  String get protocolsTitle => isEn ? 'Protocols & Engines' : 'Серверы и Протоколы';
-  String get sectionProtocols => isEn ? 'ACTIVE STREAMING ENGINES' : 'СЕТЕВЫЕ СТЕКИ ТРАНСЛЯЦИИ';
-  String get googleCastDesc => isEn ? 'Used by Google Pixel, Android devices, Chrome' : 'Используется Google Pixel, Motorola, Nothing Phone и Android';
-  String get airplayDesc => isEn ? 'Used by iPhone, iPad, Mac (Screen Mirroring)' : 'Используется iPhone, iPad, Mac (Повтор экрана)';
-  String get miracastDesc => isEn ? 'Used by Samsung Smart View, Xiaomi (HyperOS), Huawei' : 'Используется Samsung Smart View, Xiaomi (HyperOS), Honor, Huawei';
-  String get discoveryServiceLabel => isEn ? 'Discovery Service' : 'Служба обнаружения';
-  String get controlPortLabel => isEn ? 'Control Port' : 'Порт управления';
-  String get cryptoCertLabel => isEn ? 'Encryption Certificate' : 'Сертификат шифрования';
-  String get supportedChannelsLabel => isEn ? 'Supported Channels' : 'Поддерживаемые каналы';
-  String get mirrorPortLabel => isEn ? 'Mirroring Port' : 'Порт зеркалирования';
-  String get audioProtocolLabel => isEn ? 'Audio Protocol' : 'Аудио протокол';
-  String get hwRenderingLabel => isEn ? 'Hardware Rendering' : 'Аппаратный рендеринг';
-  String get videoFormatLabel => isEn ? 'Video Format' : 'Формат видео';
-  String get connTypeLabel => isEn ? 'Connection Type' : 'Тип подключения';
 
   // Dialogs
   String get editNameTitle => isEn ? 'Edit Receiver Name' : 'Изменить имя приёмника';

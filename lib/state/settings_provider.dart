@@ -12,6 +12,7 @@ class SettingsProvider with ChangeNotifier {
   int _miracastPort = 7236;
   int _rtpPort = 19999;
   bool _enableGoogleCast = true;
+  bool _enableAirplay = true;
   bool _enableMiracast = true;
   bool _hardwareDecoding = true;
   bool _autoFullScreenOnConnect = false;
@@ -55,6 +56,7 @@ class SettingsProvider with ChangeNotifier {
         if (map['miracastPort'] != null) _miracastPort = (map['miracastPort'] as num).toInt();
         if (map['rtpPort'] != null) _rtpPort = (map['rtpPort'] as num).toInt();
         if (map['enableGoogleCast'] != null) _enableGoogleCast = map['enableGoogleCast'] as bool;
+        if (map['enableAirplay'] != null) _enableAirplay = map['enableAirplay'] as bool;
         if (map['enableMiracast'] != null) _enableMiracast = map['enableMiracast'] as bool;
         if (map['hardwareDecoding'] != null) _hardwareDecoding = map['hardwareDecoding'] as bool;
         if (map['autoFullScreenOnConnect'] != null) _autoFullScreenOnConnect = map['autoFullScreenOnConnect'] as bool;
@@ -96,6 +98,7 @@ class SettingsProvider with ChangeNotifier {
         'miracastPort': _miracastPort,
         'rtpPort': _rtpPort,
         'enableGoogleCast': _enableGoogleCast,
+        'enableAirplay': _enableAirplay,
         'enableMiracast': _enableMiracast,
         'hardwareDecoding': _hardwareDecoding,
         'autoFullScreenOnConnect': _autoFullScreenOnConnect,
@@ -121,6 +124,7 @@ class SettingsProvider with ChangeNotifier {
   int get miracastPort => _miracastPort;
   int get rtpPort => _rtpPort;
   bool get enableGoogleCast => _enableGoogleCast;
+  bool get enableAirplay => _enableAirplay;
   bool get enableMiracast => _enableMiracast;
   bool get hardwareDecoding => _hardwareDecoding;
   bool get autoFullScreenOnConnect => _autoFullScreenOnConnect;
@@ -208,6 +212,12 @@ class SettingsProvider with ChangeNotifier {
 
   void setEnableGoogleCast(bool value) {
     _enableGoogleCast = value;
+    _saveSettings();
+    notifyListeners();
+  }
+
+  void setEnableAirplay(bool value) {
+    _enableAirplay = value;
     _saveSettings();
     notifyListeners();
   }
