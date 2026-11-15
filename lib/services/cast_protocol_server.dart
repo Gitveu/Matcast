@@ -154,7 +154,6 @@ class CastMessageData {
 class CastProtocolServer {
   SecureServerSocket? _server;
   final int port;
-  final bool Function(String incomingIp)? isBusy;
   final Function(CastDevice) onDeviceConnected;
   final Function(CastDevice) onDeviceDisconnected;
   final Function(String event, Map<String, dynamic> data) onProtocolEvent;
@@ -167,7 +166,6 @@ class CastProtocolServer {
 
   CastProtocolServer({
     this.port = 8009,
-    this.isBusy,
     required this.onDeviceConnected,
     required this.onDeviceDisconnected,
     required this.onProtocolEvent,
@@ -213,16 +211,6 @@ class CastProtocolServer {
     final clientIp = socket.remoteAddress.address;
     if (await NetworkService.isLocalAddress(clientIp)) {
       debugPrint('[CastProtocolServer] Local loopback/interface probe ignored: $clientIp');
-      socket.destroy();
-      return;
-    }
-
-    if (isBusy?.call(clientIp) == true) {
-      debugPrint('[CastProtocolServer] Connection rejected: Receiver is busy with active stream. Client: $clientIp');
-      onProtocolEvent('Connection Rejected', {
-        'clientIp': clientIp,
-        'reason': 'Receiver is busy streaming with another device',
-      });
       socket.destroy();
       return;
     }

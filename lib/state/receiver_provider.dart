@@ -127,7 +127,7 @@ class ReceiverProvider with ChangeNotifier {
 
       _fpsFrameCount = 0;
       _lastFpsSampleTime = DateTime.now();
-      _measuredFps = 30.0;
+      _measuredFps = settings.targetFps.toDouble();
       _startFpsWatchdog();
 
       _state = _state.copyWith(
@@ -137,7 +137,7 @@ class ReceiverProvider with ChangeNotifier {
         history: updatedHistory,
         stats: _state.stats.copyWith(
           resolution: '${settings.targetWidth}x${settings.targetHeight}',
-          fps: 30.0,
+          fps: settings.targetFps.toDouble(),
           codec: codec ?? 'H.264',
         ),
       );
@@ -363,13 +363,6 @@ class ReceiverProvider with ChangeNotifier {
       if (settings.enableGoogleCast) {
         _castServer = CastProtocolServer(
           port: settings.castPort,
-          isBusy: (incomingIp) {
-            // Guard active streaming session: reject incoming connect from different IP
-            if (_state.status == ReceiverStatus.streaming && _state.activeDevice != null) {
-              return _state.activeDevice!.ipAddress != incomingIp;
-            }
-            return false;
-          },
           onDeviceConnected: _onDeviceConnected,
           onDeviceDisconnected: _onDeviceDisconnected,
           onProtocolEvent: _onProtocolEvent,
