@@ -1,4 +1,5 @@
 # Matcast
+<img width="1266" height="793" alt="image" src="https://github.com/user-attachments/assets/4c39b0e7-93b9-4103-a950-e4aa78ad23a6" />
 
 > Looks like this is the first Google Cast / AirPlay app for Windows. So enjoy!
 
