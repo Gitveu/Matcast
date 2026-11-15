@@ -4,6 +4,8 @@
 [![Build Status](https://github.com/Gitveu/Matcast/actions/workflows/build.yml/badge.svg)](https://github.com/Gitveu/Matcast/actions/workflows/build.yml)
 [![Platform](https://img.shields.io/badge/Platform-Windows-0078D6?logo=windows&logoColor=white)](https://github.com/Gitveu/Matcast)
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
+[![Dart](https://img.shields.io/badge/Dart-3.x-0175C2?logo=dart&logoColor=white)](https://dart.dev)
+[![Material Design 3](https://img.shields.io/badge/Material%20Design-3-6750A4?logo=materialdesign&logoColor=white)](https://m3.material.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 <img width="1266" height="793" alt="image" src="https://github.com/user-attachments/assets/4c39b0e7-93b9-4103-a950-e4aa78ad23a6" />
