@@ -34,6 +34,7 @@ class NativeCastBridge {
   bool _isCurrentlyStreaming = false;
   bool get isCurrentlyStreaming => _isCurrentlyStreaming;
   int? _activeTextureId;
+  int? _registeredTextureId;
   String _activeDeviceName = 'Android Cast';
   String _activeClientIp = '';
   int _width = 1920;
@@ -95,6 +96,22 @@ class NativeCastBridge {
 
   Future<dynamic> _handleNativeEngineCall(MethodCall call) async {
     _log('NativeEngine Call: ${call.method}', {'arguments': call.arguments});
+    if (call.method == 'onNativeStreamStarted') {
+      if (_registeredTextureId != null) {
+        _isCurrentlyStreaming = true;
+        _activeTextureId = _registeredTextureId;
+        requestTextureResync();
+        onStreamStateChanged(
+          isStreaming: true,
+          textureId: _registeredTextureId,
+          deviceName: _activeDeviceName,
+          clientIp: _activeClientIp,
+          width: _width,
+          height: _height,
+          fps: 60,
+        );
+      }
+    }
     return null;
   }
 
@@ -135,12 +152,27 @@ class NativeCastBridge {
         case 'OnVideoBegin':
         case 'DecodeStart':
           _isCurrentlyStreaming = true;
+          if (_registeredTextureId != null && _activeTextureId == null) {
+            _activeTextureId = _registeredTextureId;
+            requestTextureResync();
+            onStreamStateChanged(
+              isStreaming: true,
+              textureId: _activeTextureId,
+              deviceName: _activeDeviceName,
+              clientIp: _activeClientIp,
+              width: _width,
+              height: _height,
+              fps: 60,
+              codec: 'H.264',
+            );
+          }
           break;
 
         case 'OnVideoSize':
           final textureVal = data['texture'];
           if (textureVal != null) {
-            _activeTextureId = (textureVal as num).toInt();
+            _registeredTextureId = (textureVal as num).toInt();
+            _activeTextureId = _registeredTextureId;
           }
           if (data['width'] != null) {
             _width = (data['width'] as num).toInt();
@@ -178,6 +210,21 @@ class NativeCastBridge {
           break;
 
         case 'DecodeUpdate':
+          if (!_isCurrentlyStreaming && _registeredTextureId != null) {
+            _isCurrentlyStreaming = true;
+            _activeTextureId = _registeredTextureId;
+            requestTextureResync();
+            onStreamStateChanged(
+              isStreaming: true,
+              textureId: _activeTextureId,
+              deviceName: _activeDeviceName,
+              clientIp: _activeClientIp,
+              width: _width,
+              height: _height,
+              fps: 60,
+              codec: 'H.264',
+            );
+          }
           onStatsUpdate?.call(
             bitrateKbps: data['bitrate'] != null ? (data['bitrate'] as num).toDouble() : null,
             decodeTimeUs: data['decode'] != null ? (data['decode'] as num).toInt() : null,
