@@ -1,9 +1,16 @@
 # Matcast
+
+[![Works on My Machine](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Gitveu/Matcast/main/badge/status.json)](https://github.com/Gitveu/Matcast/actions)
+[![Build Status](https://github.com/Gitveu/Matcast/actions/workflows/build.yml/badge.svg)](https://github.com/Gitveu/Matcast/actions/workflows/build.yml)
+[![Platform](https://img.shields.io/badge/Platform-Windows-0078D6?logo=windows&logoColor=white)](https://github.com/Gitveu/Matcast)
+[![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 <img width="1266" height="793" alt="image" src="https://github.com/user-attachments/assets/4c39b0e7-93b9-4103-a950-e4aa78ad23a6" />
 
 > Looks like this is the first Google Cast / AirPlay app for Windows. So enjoy!
 
-A free, lightweight streaming receiver for Windows 10/11 supporting **Google Cast**, **Apple AirPlay**, **Miracast**, and **DLNA** protocols.
+Portable Google Cast / AirPlay / Miracast / DLNA screen mirroring receiver for Windows.
 
 ---
 
@@ -94,10 +101,16 @@ Settings are stored in `matcast_settings.json` next to the executable:
 - `hardwareDecoding` — Enable GPU hardware acceleration for video decoding.
 - `targetFps` / `targetWidth` / `targetHeight` — Stream resolution and framerate targets.
 
-## Credits
+---
+
+## 🤝 Credits
+
 - [keqdroid](https://github.com/Lemonochka/keqdroid) ([@Lemonochka](https://github.com/Lemonochka)) and [vysh](https://github.com/vyto4ka/vysh) ([@vyto4ka](https://github.com/vyto4ka)) for design idea
 
+---
 
 ## 📄 License
+
 The Matcast source code is licensed under the **[MIT License](LICENSE)**.
+
 Third-party binary libraries and receiver engines (`windows/receiver_libs/`) remain under their respective licenses and terms of their owners.
