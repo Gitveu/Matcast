@@ -151,16 +151,6 @@ class SettingsView extends StatelessWidget {
                     },
                   ),
                 ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.speed),
-                  title: Text(strings.bufferTitle),
-                  subtitle: Text(strings.bufferSubtitle),
-                  trailing: Chip(
-                    label: const Text('Low Latency'),
-                    backgroundColor: theme.colorScheme.primaryContainer,
-                  ),
-                ),
               ],
             ),
           ),
