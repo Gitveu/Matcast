@@ -48,7 +48,7 @@ bool CastEngineBridge::Initialize(HWND top_hwnd, flutter::FlutterEngine* engine)
   LogBridge("[CastEngineBridge] Initialize entered. HWND=" + std::to_string(reinterpret_cast<uintptr_t>(top_hwnd)));
   hwnd_ = top_hwnd;
   sync_msg_id_ = ::RegisterWindowMessageW(L"PigeonCast_HostJsonSyncCall_v1");
-  LogBridge("[CastEngineBridge] Registered PigeonCast_HostJsonSyncCall_v1 msg_id=" + std::to_string(sync_msg_id_));
+  LogBridge("[CastEngineBridge] Registered HostJsonSyncCall_v1 msg_id=" + std::to_string(sync_msg_id_));
 
   // Call google_receiver_init directly as requested
   CallGoogleReceiverInitDirectly();
@@ -120,16 +120,19 @@ bool CastEngineBridge::Initialize(HWND top_hwnd, flutter::FlutterEngine* engine)
                 name = std::get<std::string>(it->second);
               }
               auto it_w = args->find(flutter::EncodableValue("width"));
-              if (it_w != args->end() && std::holds_alternative<int>(it_w->second)) {
-                width = std::get<int>(it_w->second);
+              if (it_w != args->end()) {
+                auto v = it_w->second.TryGetLongValue();
+                if (v.has_value()) width = static_cast<int>(v.value());
               }
               auto it_h = args->find(flutter::EncodableValue("height"));
-              if (it_h != args->end() && std::holds_alternative<int>(it_h->second)) {
-                height = std::get<int>(it_h->second);
+              if (it_h != args->end()) {
+                auto v = it_h->second.TryGetLongValue();
+                if (v.has_value()) height = static_cast<int>(v.value());
               }
               auto it_fps = args->find(flutter::EncodableValue("fps"));
-              if (it_fps != args->end() && std::holds_alternative<int>(it_fps->second)) {
-                fps = std::get<int>(it_fps->second);
+              if (it_fps != args->end()) {
+                auto v = it_fps->second.TryGetLongValue();
+                if (v.has_value()) fps = static_cast<int>(v.value());
               }
             }
             bool ok = this->Start(name, width, height, fps);

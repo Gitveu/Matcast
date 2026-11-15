@@ -33,6 +33,7 @@ class _DisplayViewState extends State<DisplayView> {
   Widget _buildStreamViewport(BuildContext context, ReceiverProvider provider) {
     final state = provider.state;
     final activeDevice = state.activeDevice;
+    final strings = provider.settings.tr(context);
 
     double textureWidth = 1920.0;
     double textureHeight = 1080.0;
@@ -118,7 +119,7 @@ class _DisplayViewState extends State<DisplayView> {
                         state.isMuted ? Icons.volume_off : Icons.volume_up,
                         color: Colors.white,
                       ),
-                      tooltip: state.isMuted ? 'Включить звук' : 'Выключить звук',
+                      tooltip: state.isMuted ? strings.tooltipMute : strings.tooltipUnmute,
                       onPressed: () => provider.toggleMute(),
                     ),
                     SizedBox(
@@ -139,7 +140,7 @@ class _DisplayViewState extends State<DisplayView> {
                     // Rotate
                     IconButton(
                       icon: const Icon(Icons.rotate_right, color: Colors.white),
-                      tooltip: 'Повернуть экран (${state.rotationAngle}°)',
+                      tooltip: strings.tooltipRotate(state.rotationAngle),
                       onPressed: () => provider.rotateScreen(),
                     ),
 
@@ -149,7 +150,7 @@ class _DisplayViewState extends State<DisplayView> {
                         state.showHud ? Icons.speed : Icons.speed_outlined,
                         color: state.showHud ? Theme.of(context).colorScheme.primary : Colors.white,
                       ),
-                      tooltip: 'Статистика стрима (HUD)',
+                      tooltip: strings.tooltipHud,
                       onPressed: () => provider.toggleHud(),
                     ),
 
@@ -159,7 +160,7 @@ class _DisplayViewState extends State<DisplayView> {
                         state.isFullScreen ? Icons.fullscreen_exit : Icons.fullscreen,
                         color: Colors.white,
                       ),
-                      tooltip: state.isFullScreen ? 'Выйти из полноэкранного режима (Esc)' : 'Во весь экран (F11)',
+                      tooltip: state.isFullScreen ? strings.tooltipFullscreenExit : strings.tooltipFullscreenEnter,
                       onPressed: () => provider.toggleFullScreen(),
                     ),
 
@@ -175,7 +176,7 @@ class _DisplayViewState extends State<DisplayView> {
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                       ),
                       icon: const Icon(Icons.close, size: 18),
-                      label: const Text('Отключить'),
+                      label: Text(strings.btnDisconnect),
                       onPressed: () => provider.disconnectActiveDevice(),
                     ),
                   ],
@@ -191,6 +192,7 @@ class _DisplayViewState extends State<DisplayView> {
   Widget _buildWaitingView(BuildContext context, ReceiverProvider provider) {
     final theme = Theme.of(context);
     final state = provider.state;
+    final strings = provider.settings.tr(context);
 
     return Center(
       child: SingleChildScrollView(
@@ -222,7 +224,7 @@ class _DisplayViewState extends State<DisplayView> {
 
             // Main Title
             Text(
-              'Ожидание сигнала трансляции',
+              strings.waitingTitle,
               style: theme.textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: theme.colorScheme.onSurface,
@@ -234,9 +236,7 @@ class _DisplayViewState extends State<DisplayView> {
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 620),
               child: Text(
-                'Потяните шторку вниз на телефоне Android и нажмите «Трансляция».\n'
-                'В списке устройств появится «${provider.settings.receiverName}».\n'
-                'Приёмник ожидает подключение на ${provider.localIp}.',
+                strings.waitingSubtitle(provider.settings.receiverName, provider.localIp),
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyLarge?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
@@ -254,21 +254,21 @@ class _DisplayViewState extends State<DisplayView> {
               children: [
                 M3StatCard(
                   icon: Icons.computer,
-                  title: 'ИМЯ ПРИЁМНИКА (MDNS)',
+                  title: strings.statReceiverName,
                   value: provider.settings.receiverName,
                   accentColor: theme.colorScheme.primary,
                 ),
                 M3StatCard(
                   icon: Icons.wifi,
-                  title: 'LAN IP ДЛЯ ПОДКЛЮЧЕНИЯ',
+                  title: strings.statLanIp,
                   value: provider.localIp,
-                  subtitle: 'Порты: ${provider.settings.castPort} (Google Cast) / ${provider.settings.miracastPort} (RTSP)',
+                  subtitle: strings.statPorts(provider.settings.castPort, provider.settings.miracastPort),
                   accentColor: Colors.blueAccent,
                 ),
                 M3StatCard(
                   icon: Icons.hub,
-                  title: 'СЛУЖБА ОБНАРУЖЕНИЯ',
-                  value: state.status == ReceiverStatus.ready ? 'Вещание активно (UDP 5353)' : 'Запуск...',
+                  title: strings.statDiscovery,
+                  value: state.status == ReceiverStatus.ready ? strings.statDiscoveryActive : strings.statDiscoveryStarting,
                   accentColor: Colors.greenAccent,
                 ),
               ],
@@ -287,7 +287,7 @@ class _DisplayViewState extends State<DisplayView> {
                     await provider.startReceiver();
                   },
                   icon: const Icon(Icons.refresh),
-                  label: const Text('Перезапустить службу приёмника'),
+                  label: Text(strings.btnRestartReceiver),
                 ),
               ],
             ),

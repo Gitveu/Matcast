@@ -23,7 +23,7 @@ void main() async {
     center: true,
     backgroundColor: Colors.transparent,
     skipTaskbar: false,
-    title: 'Matcast - Windows Screen Cast Receiver',
+    title: 'Matcast',
   );
 
   windowManager.waitUntilReadyToShow(windowOptions, () async {
@@ -56,7 +56,7 @@ class MatcastApp extends StatelessWidget {
     final settings = context.watch<SettingsProvider>();
 
     return MaterialApp(
-      title: 'Matcast Receiver',
+      title: 'Matcast',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme(),
       darkTheme: AppTheme.darkTheme(),
@@ -123,6 +123,8 @@ class _MainShellState extends State<MainShell> {
       _wasStreaming = false;
     }
 
+    final strings = provider.settings.tr(context);
+
     return KeyboardListener(
       focusNode: _focusNode,
       autofocus: true,
@@ -156,28 +158,28 @@ class _MainShellState extends State<MainShell> {
                     child: Padding(
                       padding: const EdgeInsets.only(bottom: 16),
                       child: IconButton(
-                        tooltip: 'Во весь экран (F11)',
+                        tooltip: strings.tooltipFullscreenEnter,
                         icon: const Icon(Icons.fullscreen),
                         onPressed: () => provider.toggleFullScreen(),
                       ),
                     ),
                   ),
                 ),
-                destinations: const [
+                destinations: [
                   NavigationRailDestination(
-                    icon: Icon(Icons.tv_outlined),
-                    selectedIcon: Icon(Icons.tv),
-                    label: Text('Экран'),
+                    icon: const Icon(Icons.tv_outlined),
+                    selectedIcon: const Icon(Icons.tv),
+                    label: Text(strings.tabScreen),
                   ),
                   NavigationRailDestination(
-                    icon: Icon(Icons.devices_outlined),
-                    selectedIcon: Icon(Icons.devices),
-                    label: Text('Устройства'),
+                    icon: const Icon(Icons.devices_outlined),
+                    selectedIcon: const Icon(Icons.devices),
+                    label: Text(strings.tabDevices),
                   ),
                   NavigationRailDestination(
-                    icon: Icon(Icons.settings_outlined),
-                    selectedIcon: Icon(Icons.settings),
-                    label: Text('Настройки'),
+                    icon: const Icon(Icons.settings_outlined),
+                    selectedIcon: const Icon(Icons.settings),
+                    label: Text(strings.tabSettings),
                   ),
                 ],
               ),

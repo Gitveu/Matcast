@@ -1,9 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import '../l10n/app_strings.dart';
+
+enum AppLanguage { system, en, ru }
 
 class SettingsProvider with ChangeNotifier {
-  String _receiverName = 'Matcast-PC';
+  String _receiverName = 'Matcast';
   bool _autoStart = true;
   int _castPort = 8009;
   int _miracastPort = 7236;
@@ -16,18 +19,35 @@ class SettingsProvider with ChangeNotifier {
   int _targetWidth = 1920;
   int _targetHeight = 1080;
   int _targetFps = 60;
+  AppLanguage _appLanguage = AppLanguage.system;
 
   SettingsProvider() {
     _loadSettings();
   }
 
+  static File _getSettingsFile() {
+    try {
+      final exeDir = File(Platform.resolvedExecutable).parent.path;
+      final file = File('$exeDir/matcast_settings.json');
+      if (file.existsSync()) return file;
+      final cur = File('matcast_settings.json');
+      if (cur.existsSync()) return cur;
+      return file;
+    } catch (_) {
+      return File('matcast_settings.json');
+    }
+  }
+
   void _loadSettings() {
     try {
-      final file = File('matcast_settings.json');
+      final file = _getSettingsFile();
       if (file.existsSync()) {
         final content = file.readAsStringSync();
         final map = jsonDecode(content) as Map<String, dynamic>;
-        if (map['receiverName'] != null) _receiverName = map['receiverName'].toString();
+        if (map['receiverName'] != null) {
+          final n = map['receiverName'].toString().trim();
+          if (n.isNotEmpty) _receiverName = n;
+        }
         if (map['autoStart'] != null) _autoStart = map['autoStart'] as bool;
         if (map['castPort'] != null) _castPort = (map['castPort'] as num).toInt();
         if (map['miracastPort'] != null) _miracastPort = (map['miracastPort'] as num).toInt();
@@ -45,6 +65,12 @@ class SettingsProvider with ChangeNotifier {
         if (map['targetWidth'] != null) _targetWidth = (map['targetWidth'] as num).toInt();
         if (map['targetHeight'] != null) _targetHeight = (map['targetHeight'] as num).toInt();
         if (map['targetFps'] != null) _targetFps = (map['targetFps'] as num).toInt();
+        if (map['appLanguage'] != null) {
+          final lIdx = (map['appLanguage'] as num).toInt();
+          if (lIdx >= 0 && lIdx < AppLanguage.values.length) {
+            _appLanguage = AppLanguage.values[lIdx];
+          }
+        }
         return;
       }
     } catch (_) {}
@@ -54,7 +80,7 @@ class SettingsProvider with ChangeNotifier {
 
   void _saveSettings() {
     try {
-      final file = File('matcast_settings.json');
+      final file = _getSettingsFile();
       file.writeAsStringSync(jsonEncode({
         'receiverName': _receiverName,
         'autoStart': _autoStart,
@@ -69,17 +95,13 @@ class SettingsProvider with ChangeNotifier {
         'targetWidth': _targetWidth,
         'targetHeight': _targetHeight,
         'targetFps': _targetFps,
+        'appLanguage': _appLanguage.index,
       }));
     } catch (_) {}
   }
 
   void _initDefaults() {
-    try {
-      final host = Platform.localHostname.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '');
-      if (host.isNotEmpty) {
-        _receiverName = 'Matcast-$host';
-      }
-    } catch (_) {}
+    _receiverName = 'Matcast';
     _saveSettings();
   }
 
@@ -96,7 +118,10 @@ class SettingsProvider with ChangeNotifier {
   int get targetWidth => _targetWidth;
   int get targetHeight => _targetHeight;
   int get targetFps => _targetFps;
+  AppLanguage get appLanguage => _appLanguage;
   String get resolutionLabel => '${_targetWidth}x$_targetHeight';
+
+  AppStrings tr(BuildContext context) => AppStrings(_appLanguage, context);
 
   void setResolution(int width, int height) {
     _targetWidth = width;
@@ -107,6 +132,12 @@ class SettingsProvider with ChangeNotifier {
 
   void setFps(int fps) {
     _targetFps = fps;
+    _saveSettings();
+    notifyListeners();
+  }
+
+  void setAppLanguage(AppLanguage lang) {
+    _appLanguage = lang;
     _saveSettings();
     notifyListeners();
   }

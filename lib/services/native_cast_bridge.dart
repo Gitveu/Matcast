@@ -46,13 +46,35 @@ class NativeCastBridge {
     _initChannels();
   }
 
+  static dynamic _sanitizeValue(dynamic val) {
+    if (val is String) {
+      return val.replaceAll(RegExp(r'pigeoncast', caseSensitive: false), 'Matcast');
+    } else if (val is Map) {
+      return _sanitizeData(Map<String, dynamic>.from(val));
+    } else if (val is List) {
+      return val.map(_sanitizeValue).toList();
+    }
+    return val;
+  }
+
+  static Map<String, dynamic> _sanitizeData(Map<String, dynamic> source) {
+    final clean = <String, dynamic>{};
+    source.forEach((k, v) {
+      final cleanKey = k.replaceAll(RegExp(r'pigeoncast', caseSensitive: false), 'Matcast');
+      clean[cleanKey] = _sanitizeValue(v);
+    });
+    return clean;
+  }
+
   void _log(String title, Map<String, dynamic> data) {
-    debugPrint('[NativeCastBridge] $title: $data');
+    final cleanTitle = title.replaceAll(RegExp(r'pigeoncast', caseSensitive: false), 'Matcast');
+    final cleanData = _sanitizeData(data);
+    debugPrint('[NativeCastBridge] $cleanTitle: $cleanData');
     try {
-      final line = '${DateTime.now().toIso8601String()} [$title] ${jsonEncode(data)}\n';
+      final line = '${DateTime.now().toIso8601String()} [$cleanTitle] ${jsonEncode(cleanData)}\n';
       File('matcast_dart.log').writeAsStringSync(line, mode: FileMode.append);
     } catch (_) {}
-    onProtocolLog(title, data);
+    onProtocolLog(cleanTitle, cleanData);
   }
 
   void _initChannels() {
@@ -76,8 +98,15 @@ class NativeCastBridge {
         payload = Map<String, dynamic>.from(call.arguments as Map);
       }
 
-      final type = payload['type']?.toString();
-      final data = payload['data'] is Map ? Map<String, dynamic>.from(payload['data'] as Map) : <String, dynamic>{};
+      final rawType = payload['type']?.toString() ?? '';
+      final rawData = payload['data'] is Map ? Map<String, dynamic>.from(payload['data'] as Map) : <String, dynamic>{};
+
+      // Sanitize PigeonCast mentions to Matcast
+      String type = rawType;
+      if (type == 'OnPigeoncastRegistered' || type.toLowerCase().contains('pigeon')) {
+        type = 'OnCastRegistered';
+      }
+      final data = _sanitizeData(rawData);
 
       // Log all state and control events immediately
       if (type != 'DecodeUpdate') {
