@@ -81,6 +81,12 @@ class MdnsService {
         reuseAddress: true,
       );
 
+      // Join multicast group and enable broadcasting
+      try {
+        _rawMulticastSocket!.broadcastEnabled = true;
+        _rawMulticastSocket!.multicastHops = 255;
+      } catch (_) {}
+
       // Explicitly join multicast group on physical adapter
       try {
         final interfaces = await NetworkInterface.list(
@@ -126,26 +132,31 @@ class MdnsService {
         }
       });
 
-      // Rapid initial burst (0ms, 150ms, 400ms, 800ms) for instantaneous discovery on phones
+      // Rapid initial burst (0ms, 100ms, 250ms, 500ms, 1000ms) for instantaneous discovery on phones
       _sendDnsAnnouncement(displayName, cleanName, formattedId, localIp, castPort, ttl: 120);
-      Future.delayed(const Duration(milliseconds: 150), () {
+      Future.delayed(const Duration(milliseconds: 100), () {
         if (_isBroadcasting) {
           _sendDnsAnnouncement(displayName, cleanName, formattedId, localIp, castPort, ttl: 120);
         }
       });
-      Future.delayed(const Duration(milliseconds: 400), () {
+      Future.delayed(const Duration(milliseconds: 250), () {
         if (_isBroadcasting) {
           _sendDnsAnnouncement(displayName, cleanName, formattedId, localIp, castPort, ttl: 120);
         }
       });
-      Future.delayed(const Duration(milliseconds: 800), () {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (_isBroadcasting) {
+          _sendDnsAnnouncement(displayName, cleanName, formattedId, localIp, castPort, ttl: 120);
+        }
+      });
+      Future.delayed(const Duration(milliseconds: 1000), () {
         if (_isBroadcasting) {
           _sendDnsAnnouncement(displayName, cleanName, formattedId, localIp, castPort, ttl: 120);
         }
       });
 
-      // Steady state: broadcast every 12 seconds with realistic 120s TTL (prevents Android mDNS flood throttling)
-      _announcementTimer = Timer.periodic(const Duration(seconds: 12), (_) {
+      // Steady state: broadcast every 10 seconds with realistic 120s TTL (prevents Android mDNS flood throttling)
+      _announcementTimer = Timer.periodic(const Duration(seconds: 10), (_) {
         _sendDnsAnnouncement(displayName, cleanName, formattedId, localIp, castPort, ttl: 120);
       });
 
@@ -166,11 +177,17 @@ class MdnsService {
     String localIp,
     int port,
   ) {
+    if (datagram.address.address == localIp || datagram.address.address == '127.0.0.1') {
+      return;
+    }
     try {
       final packet = _buildCastMdnsPacket(displayName, friendlyName, deviceId, localIp, port, ttl: 120);
-      // Respond directly to the querying client over unicast (bypasses router multicast filtering)
+      // 1. Respond directly to querying device unicast
       _unicastSendSocket?.send(packet, datagram.address, datagram.port);
       _rawMulticastSocket?.send(packet, datagram.address, datagram.port);
+      // 2. Respond to mDNS multicast group so standard multicast queriers receive it
+      _unicastSendSocket?.send(packet, InternetAddress('224.0.0.251'), 5353);
+      _rawMulticastSocket?.send(packet, InternetAddress('224.0.0.251'), 5353);
     } catch (_) {}
   }
 
