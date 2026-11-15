@@ -6,6 +6,7 @@ import 'network_service.dart';
 
 class SsdpService {
   RawDatagramSocket? _ssdpSocket;
+  RawDatagramSocket? _ssdpSendSocket;
   HttpServer? _httpServer;
   Timer? _notifyTimer;
   bool _isRunning = false;
@@ -43,10 +44,34 @@ class SsdpService {
       );
 
       try {
+        final interfaces = await NetworkInterface.list(
+          includeLoopback: false,
+          type: InternetAddressType.IPv4,
+        );
+        for (final iface in interfaces) {
+          final name = iface.name.toLowerCase();
+          if (name.contains('vmnet') || name.contains('virtual') || name.contains('bluetooth')) {
+            continue;
+          }
+          for (final addr in iface.addresses) {
+            if (addr.address == localIp) {
+              try {
+                _ssdpSocket!.joinMulticast(InternetAddress(ssdpMulticast), iface);
+              } catch (_) {}
+            }
+          }
+        }
+      } catch (_) {}
+      try {
         _ssdpSocket!.joinMulticast(InternetAddress(ssdpMulticast));
       } catch (e) {
         debugPrint('[SSDP] joinMulticast notice: $e');
       }
+
+      try {
+        _ssdpSendSocket = await RawDatagramSocket.bind(InternetAddress(localIp), 0);
+        _ssdpSendSocket!.broadcastEnabled = true;
+      } catch (_) {}
 
       _ssdpSocket!.listen((event) {
         if (event == RawSocketEvent.read) {
@@ -60,8 +85,8 @@ class SsdpService {
       // Send initial announcement
       _sendSsdpNotify(friendlyName, deviceId, localIp);
 
-      // Periodically announce every 5 seconds
-      _notifyTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      // Periodically announce every 10 seconds
+      _notifyTimer = Timer.periodic(const Duration(seconds: 10), (_) {
         _sendSsdpNotify(friendlyName, deviceId, localIp);
       });
 
@@ -162,18 +187,14 @@ class SsdpService {
 
     try {
       // 1. Multicast to standard UPnP group
-      _ssdpSocket!.send(bytes, InternetAddress(ssdpMulticast), ssdpPort);
+      _ssdpSendSocket?.send(bytes, InternetAddress(ssdpMulticast), ssdpPort);
+      _ssdpSocket?.send(bytes, InternetAddress(ssdpMulticast), ssdpPort);
 
       // 2. Broadcast on local subnet
       final parts = localIp.split('.');
       if (parts.length == 4) {
         final subnetBroadcast = '${parts[0]}.${parts[1]}.${parts[2]}.255';
-        _ssdpSocket!.send(bytes, InternetAddress(subnetBroadcast), ssdpPort);
-      }
-
-      // 3. Unicast directly to phone (192.168.10.18) if in same subnet
-      if (localIp.startsWith('192.168.10.')) {
-        _ssdpSocket!.send(bytes, InternetAddress('192.168.10.18'), ssdpPort);
+        _ssdpSendSocket?.send(bytes, InternetAddress(subnetBroadcast), ssdpPort);
       }
     } catch (_) {}
   }
@@ -185,6 +206,11 @@ class SsdpService {
     try {
       _ssdpSocket?.close();
       _ssdpSocket = null;
+    } catch (_) {}
+
+    try {
+      _ssdpSendSocket?.close();
+      _ssdpSendSocket = null;
     } catch (_) {}
 
     try {
