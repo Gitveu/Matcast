@@ -50,7 +50,26 @@ class ProtocolsView extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // 2. Miracast / Wi-Fi Display Card
+          // 2. Apple AirPlay / Screen Mirroring
+          _buildProtocolCard(
+            context,
+            icon: Icons.apple,
+            title: 'Apple AirPlay (Screen Mirroring & Audio)',
+            subtitle: 'Используется iPhone, iPad, Mac (Повтор экрана)',
+            isActive: true,
+            statusBadge: 'RTSP :7000 | RAOP :7000',
+            color: Colors.orangeAccent,
+            details: [
+              _detailRow('Служба обнаружения', 'Bonjour / mDNS (_airplay._tcp & _raop._tcp)'),
+              _detailRow('Порт зеркалирования', '7000 (RTSP / AirPlay)'),
+              _detailRow('Аудио протокол', 'RAOP (Remote Audio Output Protocol)'),
+              _detailRow('Аппаратный рендеринг', 'DirectX 11 (Hardware Texture DXVA2)'),
+            ],
+            onToggle: null,
+          ),
+          const SizedBox(height: 16),
+
+          // 3. Miracast / Wi-Fi Display Card
           _buildProtocolCard(
             context,
             icon: Icons.settings_remote,
@@ -232,7 +251,7 @@ class ProtocolsView extends StatelessWidget {
     required String statusBadge,
     required Color color,
     required List<Widget> details,
-    required ValueChanged<bool> onToggle,
+    ValueChanged<bool>? onToggle,
   }) {
     final theme = Theme.of(context);
 
@@ -275,10 +294,21 @@ class ProtocolsView extends StatelessWidget {
                   labelStyle: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
                 ),
                 const SizedBox(width: 8),
-                Switch(
-                  value: isActive,
-                  onChanged: onToggle,
-                ),
+                if (onToggle != null)
+                  Switch(
+                    value: isActive,
+                    onChanged: onToggle,
+                  )
+                else
+                  Chip(
+                    label: const Text('Включен'),
+                    backgroundColor: Colors.green.withValues(alpha: 0.2),
+                    labelStyle: const TextStyle(
+                      color: Colors.greenAccent,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
               ],
             ),
             const SizedBox(height: 16),

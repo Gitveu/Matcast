@@ -1,6 +1,8 @@
 enum CastProtocol {
   googleCast('Google Cast'),
+  airplay('AirPlay'),
   miracast('Miracast (WFD)'),
+  dlna('DLNA'),
   rtsp('RTSP Direct'),
   unknown('Unknown');
 

@@ -13,6 +13,7 @@ typedef OnStreamStateChanged = void Function({
   int? height,
   int? fps,
   String? codec,
+  String? protocolType,
 });
 
 typedef OnStatsUpdate = void Function({
@@ -35,8 +36,9 @@ class NativeCastBridge {
   bool get isCurrentlyStreaming => _isCurrentlyStreaming;
   int? _activeTextureId;
   int? _registeredTextureId;
-  String _activeDeviceName = 'Android Cast';
+  String _activeDeviceName = 'Cast Device';
   String _activeClientIp = '';
+  String? _activeProtocolType;
   int _width = 1920;
   int _height = 1080;
   DateTime _lastDecodeLog = DateTime.fromMillisecondsSinceEpoch(0);
@@ -148,6 +150,9 @@ class NativeCastBridge {
             _activeDeviceName = _activeClientIp;
             setActiveStreamingIp(_activeClientIp);
           }
+          if (data['type'] != null) {
+            _activeProtocolType = data['type'].toString().trim();
+          }
           break;
 
         case 'OnVideoBegin':
@@ -165,6 +170,7 @@ class NativeCastBridge {
               height: _height,
               fps: 60,
               codec: 'H.264',
+              protocolType: _activeProtocolType,
             );
           }
           break;
@@ -190,6 +196,7 @@ class NativeCastBridge {
             'codec': codec,
             'device': _activeDeviceName,
             'clientIp': _activeClientIp,
+            'protocol': _activeProtocolType,
           });
 
           // Resync hardware texture pipeline in cast_plugin
@@ -207,6 +214,7 @@ class NativeCastBridge {
             height: _height,
             fps: 60,
             codec: codec,
+            protocolType: _activeProtocolType,
           );
           break;
 
@@ -224,6 +232,7 @@ class NativeCastBridge {
               height: _height,
               fps: 60,
               codec: 'H.264',
+              protocolType: _activeProtocolType,
             );
           }
           onStatsUpdate?.call(
@@ -250,6 +259,7 @@ class NativeCastBridge {
           _isCurrentlyStreaming = false;
           _activeTextureId = null;
           _activeClientIp = '';
+          _activeProtocolType = null;
           clearActiveStreamingIp();
           onStreamStateChanged(isStreaming: false);
           break;

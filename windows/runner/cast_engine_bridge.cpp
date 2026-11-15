@@ -227,6 +227,50 @@ std::string CastEngineBridge::GetActiveClientIp() {
   return active_stream_ip_;
 }
 
+void CastEngineBridge::CallAirplayReceiverInitDirectly() {
+  LogBridge("[CastEngineBridge] Calling airplay_receiver_init directly...");
+  if (!airplay_module_) {
+    airplay_module_ = ::LoadLibraryW(L"airplay_receiver.dll");
+  }
+  if (!airplay_module_) {
+    LogBridge("[CastEngineBridge] Failed to load airplay_receiver.dll! Error: " + std::to_string(::GetLastError()));
+    return;
+  }
+  if (airplay_module_ && !airplay_receiver_init_fn_) {
+    airplay_receiver_init_fn_ = reinterpret_cast<void* (*)(void*)>(
+        ::GetProcAddress(airplay_module_, "airplay_receiver_init"));
+  }
+  if (airplay_receiver_init_fn_) {
+    static uint8_t airplay_ctx_buffer[1024] = {0};
+    void* res = airplay_receiver_init_fn_(airplay_ctx_buffer);
+    LogBridge("[CastEngineBridge] airplay_receiver_init returned: " + std::to_string(reinterpret_cast<uintptr_t>(res)));
+  } else {
+    LogBridge("[CastEngineBridge] GetProcAddress airplay_receiver_init failed!");
+  }
+}
+
+void CastEngineBridge::CallDlnaReceiverInitDirectly() {
+  LogBridge("[CastEngineBridge] Calling dlna_receiver_init directly...");
+  if (!dlna_module_) {
+    dlna_module_ = ::LoadLibraryW(L"dlna_receiver.dll");
+  }
+  if (!dlna_module_) {
+    LogBridge("[CastEngineBridge] Failed to load dlna_receiver.dll! Error: " + std::to_string(::GetLastError()));
+    return;
+  }
+  if (dlna_module_ && !dlna_receiver_init_fn_) {
+    dlna_receiver_init_fn_ = reinterpret_cast<void* (*)(void*)>(
+        ::GetProcAddress(dlna_module_, "dlna_receiver_init"));
+  }
+  if (dlna_receiver_init_fn_) {
+    static uint8_t dlna_ctx_buffer[1024] = {0};
+    void* res = dlna_receiver_init_fn_(dlna_ctx_buffer);
+    LogBridge("[CastEngineBridge] dlna_receiver_init returned: " + std::to_string(reinterpret_cast<uintptr_t>(res)));
+  } else {
+    LogBridge("[CastEngineBridge] GetProcAddress dlna_receiver_init failed!");
+  }
+}
+
 void CastEngineBridge::CallGoogleReceiverInitDirectly() {
   LogBridge("[CastEngineBridge] Calling google_receiver_init directly...");
   if (!google_module_) {
@@ -255,10 +299,12 @@ void CastEngineBridge::CallGoogleReceiverInitDirectly() {
 bool CastEngineBridge::Initialize(HWND top_hwnd, flutter::FlutterEngine* engine) {
   LogBridge("[CastEngineBridge] Initialize entered. HWND=" + std::to_string(reinterpret_cast<uintptr_t>(top_hwnd)));
   hwnd_ = top_hwnd;
-  sync_msg_id_ = ::RegisterWindowMessageW(L"Matcast_HostJsonSyncCall_v1");
-  LogBridge("[CastEngineBridge] Registered HostJsonSyncCall_v1 msg_id=" + std::to_string(sync_msg_id_));
+  sync_msg_id_ = ::RegisterWindowMessageW(L"PigeonCast_HostJsonSyncCall_v1");
+  LogBridge("[CastEngineBridge] Registered PigeonCast_HostJsonSyncCall_v1 msg_id=" + std::to_string(sync_msg_id_));
 
-  // Call google_receiver_init directly as requested
+  // Initialize native protocol receivers
+  CallAirplayReceiverInitDirectly();
+  CallDlnaReceiverInitDirectly();
   CallGoogleReceiverInitDirectly();
 
   // Load cast_plugin.dll
@@ -474,5 +520,13 @@ void CastEngineBridge::Shutdown() {
   if (google_module_) {
     ::FreeLibrary(google_module_);
     google_module_ = nullptr;
+  }
+  if (airplay_module_) {
+    ::FreeLibrary(airplay_module_);
+    airplay_module_ = nullptr;
+  }
+  if (dlna_module_) {
+    ::FreeLibrary(dlna_module_);
+    dlna_module_ = nullptr;
   }
 }
