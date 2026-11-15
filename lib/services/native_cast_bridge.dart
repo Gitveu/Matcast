@@ -48,7 +48,10 @@ class NativeCastBridge {
 
   static dynamic _sanitizeValue(dynamic val) {
     if (val is String) {
-      return val.replaceAll(RegExp(r'pigeoncast', caseSensitive: false), 'Matcast');
+      return val
+          .replaceAll(RegExp(r'pigeon_cast', caseSensitive: false), 'matcast_sys')
+          .replaceAll(RegExp(r'pigeoncast', caseSensitive: false), 'Matcast')
+          .replaceAll(RegExp(r'pigeon', caseSensitive: false), 'Matcast');
     } else if (val is Map) {
       return _sanitizeData(Map<String, dynamic>.from(val));
     } else if (val is List) {
@@ -60,14 +63,20 @@ class NativeCastBridge {
   static Map<String, dynamic> _sanitizeData(Map<String, dynamic> source) {
     final clean = <String, dynamic>{};
     source.forEach((k, v) {
-      final cleanKey = k.replaceAll(RegExp(r'pigeoncast', caseSensitive: false), 'Matcast');
+      final cleanKey = k
+          .replaceAll(RegExp(r'pigeon_cast', caseSensitive: false), 'matcast_sys')
+          .replaceAll(RegExp(r'pigeoncast', caseSensitive: false), 'Matcast')
+          .replaceAll(RegExp(r'pigeon', caseSensitive: false), 'Matcast');
       clean[cleanKey] = _sanitizeValue(v);
     });
     return clean;
   }
 
   void _log(String title, Map<String, dynamic> data) {
-    final cleanTitle = title.replaceAll(RegExp(r'pigeoncast', caseSensitive: false), 'Matcast');
+    final cleanTitle = title
+        .replaceAll(RegExp(r'pigeon_cast', caseSensitive: false), 'matcast_sys')
+        .replaceAll(RegExp(r'pigeoncast', caseSensitive: false), 'Matcast')
+        .replaceAll(RegExp(r'pigeon', caseSensitive: false), 'Matcast');
     final cleanData = _sanitizeData(data);
     debugPrint('[NativeCastBridge] $cleanTitle: $cleanData');
     try {

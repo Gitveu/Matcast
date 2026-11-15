@@ -122,8 +122,8 @@ class ReceiverProvider with ChangeNotifier {
         activeDevice: activeDev,
         history: updatedHistory,
         stats: _state.stats.copyWith(
-          resolution: '${width ?? settings.targetWidth}x${height ?? settings.targetHeight}',
-          fps: (fps ?? settings.targetFps).toDouble(),
+          resolution: '${settings.targetWidth}x${settings.targetHeight}',
+          fps: settings.targetFps.toDouble(),
           codec: codec ?? 'H.264',
         ),
       );
@@ -179,6 +179,7 @@ class ReceiverProvider with ChangeNotifier {
         stats: _state.stats.copyWith(
           latencyMs: latency,
           fps: settings.targetFps.toDouble(),
+          resolution: '${settings.targetWidth}x${settings.targetHeight}',
         ),
       );
     }

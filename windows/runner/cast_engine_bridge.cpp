@@ -47,7 +47,7 @@ void CastEngineBridge::CallGoogleReceiverInitDirectly() {
 bool CastEngineBridge::Initialize(HWND top_hwnd, flutter::FlutterEngine* engine) {
   LogBridge("[CastEngineBridge] Initialize entered. HWND=" + std::to_string(reinterpret_cast<uintptr_t>(top_hwnd)));
   hwnd_ = top_hwnd;
-  sync_msg_id_ = ::RegisterWindowMessageW(L"PigeonCast_HostJsonSyncCall_v1");
+  sync_msg_id_ = ::RegisterWindowMessageW(L"Matcast_HostJsonSyncCall_v1");
   LogBridge("[CastEngineBridge] Registered HostJsonSyncCall_v1 msg_id=" + std::to_string(sync_msg_id_));
 
   // Call google_receiver_init directly as requested
