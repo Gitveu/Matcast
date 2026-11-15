@@ -98,6 +98,10 @@ class AppStrings {
   String get airplayPortTitle => isEn ? 'Apple AirPlay RTSP Port' : 'Порт Apple AirPlay RTSP';
   String get miracastPortTitle => isEn ? 'Miracast RTSP Port' : 'Порт Miracast RTSP';
 
+  // Section About
+  String get sectionAbout => isEn ? 'ABOUT & SOURCE CODE' : 'О ПРОГРАММЕ И ИСХОДНЫЙ КОД';
+  String get repositorySubtitle => isEn ? 'GitHub Repository' : 'Репозиторий на GitHub';
+
   // Dialogs
   String get editNameTitle => isEn ? 'Edit Receiver Name' : 'Изменить имя приёмника';
   String get editNameHint => isEn ? 'e.g. Living-Room-PC' : 'например, Matcast-PC';
