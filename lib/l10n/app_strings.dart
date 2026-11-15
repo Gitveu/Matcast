@@ -80,8 +80,6 @@ class AppStrings {
   String get resolutionSubtitle => isEn ? 'Target resolution for stream receiver engine' : 'Целевое разрешение для движка приёма потока';
   String get fpsTitle => isEn ? 'Target Frame Rate (FPS)' : 'Частота кадров (FPS)';
   String get fpsSubtitle => isEn ? 'Target display refresh rate' : 'Целевая частота обновления экрана';
-  String get bufferTitle => isEn ? 'Low Latency Stream Buffer' : 'Буфер потока низких задержек';
-  String get bufferSubtitle => isEn ? 'Optimized 32 MB ring buffer for minimal input lag' : '32 МБ для минимального инпут-лага при зеркалировании';
 
   String get sectionAppearance => isEn ? 'APPEARANCE & LANGUAGE' : 'ВНЕШНИЙ ВИД И ЯЗЫК';
   String get themeTitle => isEn ? 'Color Theme' : 'Тема оформления';

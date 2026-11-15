@@ -116,6 +116,11 @@ class ReceiverProvider with ChangeNotifier {
       updatedHistory.removeWhere((d) => d.name == activeDev.name);
       updatedHistory.insert(0, activeDev);
 
+      _fpsFrameCount = 0;
+      _lastFpsSampleTime = DateTime.now();
+      _measuredFps = 30.0;
+      _startFpsWatchdog();
+
       _state = _state.copyWith(
         status: ReceiverStatus.streaming,
         textureId: textureId,
@@ -123,7 +128,7 @@ class ReceiverProvider with ChangeNotifier {
         history: updatedHistory,
         stats: _state.stats.copyWith(
           resolution: '${settings.targetWidth}x${settings.targetHeight}',
-          fps: settings.targetFps.toDouble(),
+          fps: 30.0,
           codec: codec ?? 'H.264',
         ),
       );
@@ -131,6 +136,9 @@ class ReceiverProvider with ChangeNotifier {
         setFullScreen(true);
       }
     } else {
+      _stopFpsWatchdog();
+      _fpsFrameCount = 0;
+      _measuredFps = 0.0;
       _state = _state.copyWith(
         status: ReceiverStatus.ready,
         clearActiveDevice: true,
@@ -143,11 +151,51 @@ class ReceiverProvider with ChangeNotifier {
   int _lastDecodeUnits = 0;
   DateTime _lastStatsNotify = DateTime.now();
 
+  int _fpsFrameCount = 0;
+  DateTime _lastFpsSampleTime = DateTime.now();
+  double _measuredFps = 0.0;
+  Timer? _fpsWatchdogTimer;
+
+  void _startFpsWatchdog() {
+    _fpsWatchdogTimer?.cancel();
+    _fpsWatchdogTimer = Timer.periodic(const Duration(milliseconds: 600), (_) {
+      if (_state.status != ReceiverStatus.streaming) {
+        _stopFpsWatchdog();
+        return;
+      }
+      final now = DateTime.now();
+      final stallMs = now.difference(_lastFpsSampleTime).inMilliseconds;
+      if (stallMs > 1200) {
+        _measuredFps = 0.0;
+        if (_state.stats.fps != 0.0) {
+          _state = _state.copyWith(
+            stats: _state.stats.copyWith(fps: 0.0),
+          );
+          notifyListeners();
+        }
+      }
+    });
+  }
+
+  void _stopFpsWatchdog() {
+    _fpsWatchdogTimer?.cancel();
+    _fpsWatchdogTimer = null;
+  }
+
   void _onNativeStatsUpdate({
     double? bitrateKbps,
     int? decodeTimeUs,
     int? renderTimeUs,
   }) {
+    final now = DateTime.now();
+    _fpsFrameCount++;
+    final elapsedFpsMs = now.difference(_lastFpsSampleTime).inMilliseconds;
+    if (elapsedFpsMs >= 600) {
+      _measuredFps = (_fpsFrameCount * 1000.0) / elapsedFpsMs;
+      _fpsFrameCount = 0;
+      _lastFpsSampleTime = now;
+    }
+
     if (bitrateKbps != null && bitrateKbps > 0) {
       _state = _state.copyWith(
         stats: _state.stats.copyWith(
@@ -162,29 +210,33 @@ class ReceiverProvider with ChangeNotifier {
 
     if (renderTimeUs != null && renderTimeUs > 0) {
       _lastRenderUnits = renderTimeUs;
-
-      // render is in 100ns units: 10,000 units = 1ms. E.g. 233,300 -> 23.3ms.
-      // Total end-to-end estimated latency including network transmission & buffer:
-      int baseLatency = (_lastRenderUnits / 10000.0).round();
-      if (baseLatency <= 0 && _lastDecodeUnits > 0) {
-        baseLatency = (_lastDecodeUnits / 10000.0).round();
-      }
-      if (baseLatency <= 0 || baseLatency > 400) {
-        baseLatency = 24;
-      }
-      // Add realistic network transmission delay (~10-14ms)
-      int latency = baseLatency + 10;
-
-      _state = _state.copyWith(
-        stats: _state.stats.copyWith(
-          latencyMs: latency,
-          fps: settings.targetFps.toDouble(),
-          resolution: '${settings.targetWidth}x${settings.targetHeight}',
-        ),
-      );
     }
 
-    final now = DateTime.now();
+    // render is in 100ns units: 10,000 units = 1ms. E.g. 233,300 -> 23.3ms.
+    // Total end-to-end estimated latency including network transmission & buffer:
+    int baseLatency = (_lastRenderUnits / 10000.0).round();
+    if (baseLatency <= 0 && _lastDecodeUnits > 0) {
+      baseLatency = (_lastDecodeUnits / 10000.0).round();
+    }
+    if (baseLatency <= 0 || baseLatency > 400) {
+      baseLatency = 24;
+    }
+    // Add realistic network transmission delay (~10-14ms)
+    int latency = baseLatency + 10;
+
+    double displayFps = _measuredFps;
+    if (displayFps <= 0.0 && _fpsFrameCount > 0 && elapsedFpsMs > 0) {
+      displayFps = (_fpsFrameCount * 1000.0) / elapsedFpsMs;
+    }
+
+    _state = _state.copyWith(
+      stats: _state.stats.copyWith(
+        latencyMs: latency,
+        fps: double.parse(displayFps.clamp(0.0, 120.0).toStringAsFixed(0)),
+        resolution: '${settings.targetWidth}x${settings.targetHeight}',
+      ),
+    );
+
     // Throttle stats updates to avoid rebuild thrashing
     if (now.difference(_lastStatsNotify).inMilliseconds > 400) {
       _lastStatsNotify = now;
@@ -462,6 +514,7 @@ class ReceiverProvider with ChangeNotifier {
 
   @override
   void dispose() {
+    _stopFpsWatchdog();
     _nativeBridge.dispose();
     _streamService.dispose();
     _mdnsService.stopBroadcast();

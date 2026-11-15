@@ -173,15 +173,11 @@ class NativeCastBridge {
           break;
 
         case 'DecodeUpdate':
-          if (data['bitrate'] != null) {
-            onStatsUpdate?.call(bitrateKbps: (data['bitrate'] as num).toDouble());
-          }
-          if (data['decode'] != null) {
-            onStatsUpdate?.call(decodeTimeUs: (data['decode'] as num).toInt());
-          }
-          if (data['render'] != null) {
-            onStatsUpdate?.call(renderTimeUs: (data['render'] as num).toInt());
-          }
+          onStatsUpdate?.call(
+            bitrateKbps: data['bitrate'] != null ? (data['bitrate'] as num).toDouble() : null,
+            decodeTimeUs: data['decode'] != null ? (data['decode'] as num).toInt() : null,
+            renderTimeUs: data['render'] != null ? (data['render'] as num).toInt() : null,
+          );
           final now = DateTime.now();
           if (now.difference(_lastDecodeLog).inMilliseconds >= 250) {
             _lastDecodeLog = now;
