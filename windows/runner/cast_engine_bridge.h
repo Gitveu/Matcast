@@ -10,6 +10,7 @@
 
 #include <string>
 #include <memory>
+#include <mutex>
 
 class CastEngineBridge {
  public:
@@ -23,6 +24,11 @@ class CastEngineBridge {
   std::string GetMirrorStatusJson();
   void Shutdown();
 
+  void SetActiveStreamingIp(const std::string& ip);
+  void ClearActiveStreamingIp();
+  bool IsBusyReject(const std::string& incoming_ip);
+  std::string GetActiveClientIp();
+
   static void OnPromoteGui();
   void CallGoogleReceiverInitDirectly();
 
@@ -34,6 +40,9 @@ class CastEngineBridge {
   HMODULE google_module_ = nullptr;
   HWND hwnd_ = nullptr;
   UINT sync_msg_id_ = 0;
+
+  std::mutex ip_mutex_;
+  std::string active_stream_ip_ = "";
 
   void (*set_hwnd_fn_)(HWND) = nullptr;
   void (*deliver_sync_msg_fn_)(void*) = nullptr;

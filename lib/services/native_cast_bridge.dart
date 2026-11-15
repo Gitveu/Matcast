@@ -146,6 +146,7 @@ class NativeCastBridge {
           if (data['name'] != null) {
             _activeClientIp = data['name'].toString().trim();
             _activeDeviceName = _activeClientIp;
+            setActiveStreamingIp(_activeClientIp);
           }
           break;
 
@@ -249,6 +250,7 @@ class NativeCastBridge {
           _isCurrentlyStreaming = false;
           _activeTextureId = null;
           _activeClientIp = '';
+          clearActiveStreamingIp();
           onStreamStateChanged(isStreaming: false);
           break;
 
@@ -260,6 +262,47 @@ class NativeCastBridge {
     }
 
     return null;
+  }
+
+  static Future<bool> setActiveStreamingIp(String ip) async {
+    try {
+      final res = await _engineChannel.invokeMethod('setActiveStreamingIp', ip);
+      return res == true;
+    } catch (e) {
+      debugPrint('[NativeCastBridge] setActiveStreamingIp error: $e');
+      return false;
+    }
+  }
+
+  static Future<bool> clearActiveStreamingIp() async {
+    try {
+      final res = await _engineChannel.invokeMethod('clearActiveStreamingIp');
+      return res == true;
+    } catch (e) {
+      debugPrint('[NativeCastBridge] clearActiveStreamingIp error: $e');
+      return false;
+    }
+  }
+
+  static Future<bool> restartEngine(
+    String name, {
+    int width = 1920,
+    int height = 1080,
+    int fps = 60,
+  }) async {
+    try {
+      await _engineChannel.invokeMethod('stopEngine');
+      final res = await _engineChannel.invokeMethod('startEngine', {
+        'name': name,
+        'width': width,
+        'height': height,
+        'fps': fps,
+      });
+      return res == true;
+    } catch (e) {
+      debugPrint('[NativeCastBridge] restartEngine error: $e');
+      return false;
+    }
   }
 
   static Future<bool> setNativeEngineName(

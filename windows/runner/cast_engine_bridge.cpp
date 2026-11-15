@@ -1,3 +1,10 @@
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <windows.h>
+
 #include "cast_engine_bridge.h"
 
 #include <iostream>
@@ -8,6 +15,120 @@ static void LogBridge(const std::string& msg) {
   std::ofstream ofs("matcast_engine.log", std::ios::app);
   if (ofs.is_open()) {
     ofs << msg << std::endl;
+  }
+}
+
+typedef SOCKET (WSAAPI *AcceptFn)(SOCKET s, struct sockaddr* addr, int* addrlen);
+static AcceptFn g_real_accept = nullptr;
+
+static bool HookModuleIAT(HMODULE target_module, const char* target_dll_name, void* old_func, void* new_func) {
+  if (!target_module || !old_func || !new_func) return false;
+
+  auto* dos_header = reinterpret_cast<PIMAGE_DOS_HEADER>(target_module);
+  if (dos_header->e_magic != IMAGE_DOS_SIGNATURE) return false;
+
+  auto* nt_headers = reinterpret_cast<PIMAGE_NT_HEADERS>(
+      reinterpret_cast<uint8_t*>(target_module) + dos_header->e_lfanew);
+  if (nt_headers->Signature != IMAGE_NT_SIGNATURE) return false;
+
+  IMAGE_DATA_DIRECTORY import_dir =
+      nt_headers->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
+  if (!import_dir.VirtualAddress || import_dir.Size == 0) return false;
+
+  auto* import_desc = reinterpret_cast<PIMAGE_IMPORT_DESCRIPTOR>(
+      reinterpret_cast<uint8_t*>(target_module) + import_dir.VirtualAddress);
+
+  bool hooked = false;
+  for (; import_desc->Name != 0; ++import_desc) {
+    const char* dll_name = reinterpret_cast<const char*>(
+        reinterpret_cast<uint8_t*>(target_module) + import_desc->Name);
+    if (_stricmp(dll_name, target_dll_name) == 0) {
+      auto* thunk = reinterpret_cast<PIMAGE_THUNK_DATA>(
+          reinterpret_cast<uint8_t*>(target_module) + import_desc->FirstThunk);
+      for (; thunk->u1.Function != 0; ++thunk) {
+        if (reinterpret_cast<void*>(thunk->u1.Function) == old_func) {
+          DWORD old_protect = 0;
+          if (::VirtualProtect(&thunk->u1.Function, sizeof(void*), PAGE_EXECUTE_READWRITE, &old_protect)) {
+            thunk->u1.Function = reinterpret_cast<uintptr_t>(new_func);
+            ::VirtualProtect(&thunk->u1.Function, sizeof(void*), old_protect, &old_protect);
+            hooked = true;
+          }
+        }
+      }
+    }
+  }
+  return hooked;
+}
+
+static SOCKET WSAAPI HookedAccept(SOCKET s, struct sockaddr* addr, int* addrlen) {
+  if (!g_real_accept) {
+    HMODULE ws2 = ::GetModuleHandleA("ws2_32.dll");
+    if (ws2) {
+      g_real_accept = reinterpret_cast<AcceptFn>(::GetProcAddress(ws2, "accept"));
+    }
+  }
+  if (!g_real_accept) {
+    return INVALID_SOCKET;
+  }
+
+  SOCKET client = g_real_accept(s, addr, addrlen);
+  if (client == INVALID_SOCKET) {
+    return INVALID_SOCKET;
+  }
+
+  // Identify client IP
+  sockaddr_storage ss{};
+  int ss_len = sizeof(ss);
+  char ip_buf[INET6_ADDRSTRLEN] = {0};
+  if (::getpeername(client, reinterpret_cast<sockaddr*>(&ss), &ss_len) == 0) {
+    if (ss.ss_family == AF_INET) {
+      auto* sin = reinterpret_cast<sockaddr_in*>(&ss);
+      ::inet_ntop(AF_INET, &(sin->sin_addr), ip_buf, sizeof(ip_buf));
+    } else if (ss.ss_family == AF_INET6) {
+      auto* sin6 = reinterpret_cast<sockaddr_in6*>(&ss);
+      ::inet_ntop(AF_INET6, &(sin6->sin6_addr), ip_buf, sizeof(ip_buf));
+    }
+  } else if (addr && addrlen && *addrlen >= sizeof(sockaddr_in)) {
+    if (addr->sa_family == AF_INET) {
+      auto* sin = reinterpret_cast<sockaddr_in*>(addr);
+      ::inet_ntop(AF_INET, &(sin->sin_addr), ip_buf, sizeof(ip_buf));
+    } else if (addr->sa_family == AF_INET6) {
+      auto* sin6 = reinterpret_cast<sockaddr_in6*>(addr);
+      ::inet_ntop(AF_INET6, &(sin6->sin6_addr), ip_buf, sizeof(ip_buf));
+    }
+  }
+
+  std::string client_ip(ip_buf);
+  if (CastEngineBridge::GetInstance().IsBusyReject(client_ip)) {
+    LogBridge("[HookedAccept] REJECTED incoming connection from " + client_ip +
+              " because active stream is locked to " +
+              CastEngineBridge::GetInstance().GetActiveClientIp());
+    ::closesocket(client);
+    ::WSASetLastError(WSAECONNREFUSED);
+    return INVALID_SOCKET;
+  }
+
+  if (!client_ip.empty() && client_ip != "127.0.0.1" && client_ip != "::1") {
+    LogBridge("[HookedAccept] Accepted connection from " + client_ip);
+  }
+
+  return client;
+}
+
+static void EnsureAcceptHookInstalled(HMODULE mod, const char* mod_name) {
+  if (!mod) return;
+  if (!g_real_accept) {
+    HMODULE ws2 = ::GetModuleHandleA("ws2_32.dll");
+    if (!ws2) {
+      ws2 = ::LoadLibraryA("ws2_32.dll");
+    }
+    if (ws2) {
+      g_real_accept = reinterpret_cast<AcceptFn>(::GetProcAddress(ws2, "accept"));
+    }
+  }
+  if (g_real_accept) {
+    bool ok = HookModuleIAT(mod, "ws2_32.dll", reinterpret_cast<void*>(g_real_accept), reinterpret_cast<void*>(&HookedAccept));
+    LogBridge(std::string("[CastEngineBridge] Installed accept hook on ") + mod_name + ": " + (ok ? "SUCCESS" : "FAILED"));
   }
 }
 
@@ -22,6 +143,37 @@ CastEngineBridge::~CastEngineBridge() {
   Shutdown();
 }
 
+void CastEngineBridge::SetActiveStreamingIp(const std::string& ip) {
+  std::lock_guard<std::mutex> lock(ip_mutex_);
+  active_stream_ip_ = ip;
+  LogBridge("[CastEngineBridge] SetActiveStreamingIp locked to: " + ip);
+}
+
+void CastEngineBridge::ClearActiveStreamingIp() {
+  std::lock_guard<std::mutex> lock(ip_mutex_);
+  LogBridge("[CastEngineBridge] ClearActiveStreamingIp released (was: " + active_stream_ip_ + ")");
+  active_stream_ip_.clear();
+}
+
+bool CastEngineBridge::IsBusyReject(const std::string& incoming_ip) {
+  std::lock_guard<std::mutex> lock(ip_mutex_);
+  if (active_stream_ip_.empty()) {
+    return false;
+  }
+  if (incoming_ip.empty() || incoming_ip == "127.0.0.1" || incoming_ip == "::1") {
+    return false;
+  }
+  if (incoming_ip == active_stream_ip_) {
+    return false;
+  }
+  return true;
+}
+
+std::string CastEngineBridge::GetActiveClientIp() {
+  std::lock_guard<std::mutex> lock(ip_mutex_);
+  return active_stream_ip_;
+}
+
 void CastEngineBridge::CallGoogleReceiverInitDirectly() {
   LogBridge("[CastEngineBridge] Calling google_receiver_init directly...");
   if (!google_module_) {
@@ -31,6 +183,9 @@ void CastEngineBridge::CallGoogleReceiverInitDirectly() {
     LogBridge("[CastEngineBridge] Failed to load googlecast_receiver.dll! Error: " + std::to_string(::GetLastError()));
     return;
   }
+  // Install accept hook on googlecast_receiver.dll before initializing listening socket
+  EnsureAcceptHookInstalled(google_module_, "googlecast_receiver.dll");
+
   if (google_module_ && !google_receiver_init_fn_) {
     google_receiver_init_fn_ = reinterpret_cast<void* (*)(void*)>(
         ::GetProcAddress(google_module_, "google_receiver_init"));
@@ -62,6 +217,7 @@ bool CastEngineBridge::Initialize(HWND top_hwnd, flutter::FlutterEngine* engine)
     return false;
   }
   LogBridge("[CastEngineBridge] Loaded cast_plugin.dll successfully.");
+  EnsureAcceptHookInstalled(cast_module_, "cast_plugin.dll");
 
   set_hwnd_fn_ = reinterpret_cast<void (*)(HWND)>(
       ::GetProcAddress(cast_module_, "CastHostSetJsonSyncTargetHwnd"));
@@ -151,6 +307,15 @@ bool CastEngineBridge::Initialize(HWND top_hwnd, flutter::FlutterEngine* engine)
           } else if (call.method_name() == "getMirrorStatus") {
             std::string status = this->GetMirrorStatusJson();
             result->Success(flutter::EncodableValue(status));
+          } else if (call.method_name() == "setActiveStreamingIp") {
+            const auto* str_arg = std::get_if<std::string>(call.arguments());
+            if (str_arg) {
+              this->SetActiveStreamingIp(*str_arg);
+            }
+            result->Success(flutter::EncodableValue(true));
+          } else if (call.method_name() == "clearActiveStreamingIp") {
+            this->ClearActiveStreamingIp();
+            result->Success(flutter::EncodableValue(true));
           } else {
             result->NotImplemented();
           }
