@@ -14,7 +14,7 @@ Portable Google Cast / AirPlay / Miracast / DLNA screen mirroring receiver for W
 
 ---
 
-## ⚡ Key Features
+## Key Features
 
 - **Google Cast (Chromecast)** — Low-latency system-wide screen and audio mirroring directly from Android's quick settings shade (*Cast / Smart View*).
 - **Apple AirPlay** — Screen mirroring and audio streaming from iPhone, iPad, and Mac.
@@ -27,7 +27,7 @@ Portable Google Cast / AirPlay / Miracast / DLNA screen mirroring receiver for W
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```text
 Matcast/
@@ -71,7 +71,7 @@ Matcast/
 
 ---
 
-## 🚀 Building & Running
+## Building & Running
 
 ### Prerequisites
 - Flutter SDK (3.x+)
@@ -92,7 +92,7 @@ The script compiles the release binary, verifies and synchronizes native DLLs, a
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
 Settings are stored in `matcast_settings.json` next to the executable:
 - `receiverName` — Network name broadcasted to Android Cast and Apple AirPlay devices.
@@ -103,13 +103,13 @@ Settings are stored in `matcast_settings.json` next to the executable:
 
 ---
 
-## 🤝 Credits
+## Credits
 
 - [keqdroid](https://github.com/Lemonochka/keqdroid) ([@Lemonochka](https://github.com/Lemonochka)) and [vysh](https://github.com/vyto4ka/vysh) ([@vyto4ka](https://github.com/vyto4ka)) for design idea
 
 ---
 
-## 📄 License
+## License
 
 The Matcast source code is licensed under the **[MIT License](LICENSE)**.
 
