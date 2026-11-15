@@ -1,7 +1,7 @@
 # Matcast
 
 [![Works on My Machine](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Gitveu/Matcast/main/badge/status.json)](https://github.com/Gitveu/Matcast/actions)
-[![Build Status](https://github.com/Gitveu/Matcast/actions/workflows/build.yml/badge.svg)](https://github.com/Gitveu/Matcast/actions/workflows/build.yml)
+[![Build](https://github.com/Gitveu/Matcast/actions/workflows/build.yml/badge.svg)](https://github.com/Gitveu/Matcast/actions/workflows/build.yml)
 [![Platform](https://img.shields.io/badge/Platform-Windows-0078D6?logo=windows&logoColor=white)](https://github.com/Gitveu/Matcast)
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.x-0175C2?logo=dart&logoColor=white)](https://dart.dev)
