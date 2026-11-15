@@ -145,6 +145,11 @@ class ReceiverProvider with ChangeNotifier {
         setFullScreen(true);
       }
 
+      if (effectiveIp.isNotEmpty && effectiveIp != _localIp) {
+        NativeCastBridge.setActiveStreamingIp(effectiveIp);
+        _mdnsService.setStreamingState(isStreaming: true, activeIp: effectiveIp);
+      }
+
       // Asynchronous reverse DNS lookup to discover phone model / hostname if no alias set
       if (alias == null && effectiveIp.isNotEmpty && effectiveIp != _localIp) {
         InternetAddress(effectiveIp).reverse().timeout(const Duration(milliseconds: 1500)).then((rev) {
@@ -165,6 +170,8 @@ class ReceiverProvider with ChangeNotifier {
       _stopFpsWatchdog();
       _fpsFrameCount = 0;
       _measuredFps = 0.0;
+      NativeCastBridge.clearActiveStreamingIp();
+      _mdnsService.setStreamingState(isStreaming: false);
       _state = _state.copyWith(
         status: ReceiverStatus.ready,
         clearActiveDevice: true,
@@ -359,8 +366,10 @@ class ReceiverProvider with ChangeNotifier {
         fps: settings.targetFps,
       );
 
-      // 1. Start Cast V2 TLS Server
-      if (settings.enableGoogleCast) {
+      // 1. Google Cast V2 engine is handled natively by googlecast_receiver.dll on port 8009.
+      // On Windows, the native DirectX engine binds port 8009 with IAT connection rejection protection.
+      // Avoid running Dart's fallback server on the same port to eliminate socket race conditions.
+      if (settings.enableGoogleCast && !Platform.isWindows) {
         _castServer = CastProtocolServer(
           port: settings.castPort,
           onDeviceConnected: _onDeviceConnected,
@@ -527,6 +536,14 @@ class ReceiverProvider with ChangeNotifier {
   Future<void> disconnectActiveDevice() async {
     if (_state.activeDevice != null) {
       await _streamService.stop();
+      NativeCastBridge.clearActiveStreamingIp();
+      _mdnsService.setStreamingState(isStreaming: false);
+      await NativeCastBridge.restartEngine(
+        settings.receiverName,
+        width: settings.targetWidth,
+        height: settings.targetHeight,
+        fps: settings.targetFps,
+      );
       _state = _state.copyWith(
         clearActiveDevice: true,
         status: ReceiverStatus.ready,
