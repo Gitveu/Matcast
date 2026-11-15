@@ -96,3 +96,8 @@ Settings are stored in `matcast_settings.json` next to the executable:
 
 ## Credits
 - [keqdroid](https://github.com/Lemonochka/keqdroid) ([@Lemonochka](https://github.com/Lemonochka)) and [vysh](https://github.com/vyto4ka/vysh) ([@vyto4ka](https://github.com/vyto4ka)) for design idea
+
+
+## 📄 License
+The Matcast source code is licensed under the **[MIT License](LICENSE)**.
+Third-party binary libraries and receiver engines (`windows/receiver_libs/`) remain under their respective licenses and terms of their owners.
