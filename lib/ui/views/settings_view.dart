@@ -44,20 +44,6 @@ class SettingsView extends StatelessWidget {
                   ),
                 ),
                 const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.language),
-                  title: Text(strings.languageTitle),
-                  trailing: SegmentedButton<AppLanguage>(
-                    segments: [
-                      ButtonSegment(value: AppLanguage.system, label: Text(strings.langSystem)),
-                      ButtonSegment(value: AppLanguage.en, label: Text(strings.langEn)),
-                      ButtonSegment(value: AppLanguage.ru, label: Text(strings.langRu)),
-                    ],
-                    selected: {settings.appLanguage},
-                    onSelectionChanged: (set) => settings.setAppLanguage(set.first),
-                  ),
-                ),
-                const Divider(height: 1),
                 SwitchListTile(
                   secondary: const Icon(Icons.power_settings_new),
                   title: Text(strings.autoStartTitle),
@@ -151,6 +137,14 @@ class SettingsView extends StatelessWidget {
                     },
                   ),
                 ),
+                const Divider(height: 1),
+                SwitchListTile(
+                  secondary: const Icon(Icons.analytics_outlined),
+                  title: Text(strings.showHudTitle),
+                  subtitle: Text(strings.showHudSubtitle),
+                  value: settings.showStreamHud,
+                  onChanged: (val) => settings.setShowStreamHud(val),
+                ),
               ],
             ),
           ),
@@ -170,9 +164,34 @@ class SettingsView extends StatelessWidget {
             color: theme.colorScheme.surfaceContainer,
             child: Column(
               children: [
+                // Language
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.language),
+                      const SizedBox(width: 16),
+                      Text(
+                        strings.languageTitle,
+                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      const Spacer(),
+                      SegmentedButton<AppLanguage>(
+                        segments: [
+                          ButtonSegment(value: AppLanguage.system, label: Text(strings.langSystem)),
+                          ButtonSegment(value: AppLanguage.en, label: Text(strings.langEn)),
+                          ButtonSegment(value: AppLanguage.ru, label: Text(strings.langRu)),
+                        ],
+                        selected: {settings.appLanguage},
+                        onSelectionChanged: (set) => settings.setAppLanguage(set.first),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
                 // Theme
                 Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Row(
                     children: [
                       const Icon(Icons.brightness_4_outlined),
@@ -218,6 +237,13 @@ class SettingsView extends StatelessWidget {
                   title: Text(strings.castPortTitle),
                   subtitle: const Text('Google Cast V2 TLS (TCP)'),
                   trailing: Text('${settings.castPort}', style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.bold)),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.apple),
+                  title: Text(strings.airplayPortTitle),
+                  subtitle: const Text('Apple AirPlay RTSP / RAOP (TCP)'),
+                  trailing: const Text('7000', style: TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.bold)),
                 ),
                 const Divider(height: 1),
                 ListTile(

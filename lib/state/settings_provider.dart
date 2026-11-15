@@ -15,6 +15,7 @@ class SettingsProvider with ChangeNotifier {
   bool _enableMiracast = true;
   bool _hardwareDecoding = true;
   bool _autoFullScreenOnConnect = false;
+  bool _showStreamHud = true;
   ThemeMode _themeMode = ThemeMode.dark;
   int _targetWidth = 1920;
   int _targetHeight = 1080;
@@ -57,6 +58,7 @@ class SettingsProvider with ChangeNotifier {
         if (map['enableMiracast'] != null) _enableMiracast = map['enableMiracast'] as bool;
         if (map['hardwareDecoding'] != null) _hardwareDecoding = map['hardwareDecoding'] as bool;
         if (map['autoFullScreenOnConnect'] != null) _autoFullScreenOnConnect = map['autoFullScreenOnConnect'] as bool;
+        if (map['showStreamHud'] != null) _showStreamHud = map['showStreamHud'] as bool;
         if (map['themeMode'] != null) {
           final idx = (map['themeMode'] as num).toInt();
           if (idx >= 0 && idx < ThemeMode.values.length) {
@@ -97,6 +99,7 @@ class SettingsProvider with ChangeNotifier {
         'enableMiracast': _enableMiracast,
         'hardwareDecoding': _hardwareDecoding,
         'autoFullScreenOnConnect': _autoFullScreenOnConnect,
+        'showStreamHud': _showStreamHud,
         'themeMode': _themeMode.index,
         'targetWidth': _targetWidth,
         'targetHeight': _targetHeight,
@@ -121,6 +124,7 @@ class SettingsProvider with ChangeNotifier {
   bool get enableMiracast => _enableMiracast;
   bool get hardwareDecoding => _hardwareDecoding;
   bool get autoFullScreenOnConnect => _autoFullScreenOnConnect;
+  bool get showStreamHud => _showStreamHud;
   ThemeMode get themeMode => _themeMode;
   int get targetWidth => _targetWidth;
   int get targetHeight => _targetHeight;
@@ -153,6 +157,12 @@ class SettingsProvider with ChangeNotifier {
 
   void setFps(int fps) {
     _targetFps = fps;
+    _saveSettings();
+    notifyListeners();
+  }
+
+  void setShowStreamHud(bool value) {
+    _showStreamHud = value;
     _saveSettings();
     notifyListeners();
   }

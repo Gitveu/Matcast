@@ -10,6 +10,7 @@ import 'state/settings_provider.dart';
 import 'ui/theme/app_theme.dart';
 import 'ui/views/devices_view.dart';
 import 'ui/views/display_view.dart';
+import 'ui/views/protocols_view.dart';
 import 'ui/views/settings_view.dart';
 
 void main() async {
@@ -82,6 +83,7 @@ class _MainShellState extends State<MainShell> {
   final List<Widget> _views = const [
     DisplayView(),
     DevicesView(),
+    ProtocolsView(),
     SettingsView(),
   ];
 
@@ -176,6 +178,11 @@ class _MainShellState extends State<MainShell> {
                     icon: const Icon(Icons.devices_outlined),
                     selectedIcon: const Icon(Icons.devices),
                     label: Text(strings.tabDevices),
+                  ),
+                  NavigationRailDestination(
+                    icon: const Icon(Icons.hub_outlined),
+                    selectedIcon: const Icon(Icons.hub),
+                    label: Text(strings.tabProtocols),
                   ),
                   NavigationRailDestination(
                     icon: const Icon(Icons.settings_outlined),

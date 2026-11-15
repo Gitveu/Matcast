@@ -11,16 +11,17 @@ class ProtocolsView extends StatelessWidget {
     final theme = Theme.of(context);
     final provider = context.watch<ReceiverProvider>();
     final settings = provider.settings;
+    final strings = settings.tr(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Серверы и Протоколы'),
+        title: Text(strings.protocolsTitle),
       ),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
           Text(
-            'СЕТЕВЫЕ СТЕКИ ТРАНСЛЯЦИИ',
+            strings.sectionProtocols,
             style: theme.textTheme.labelLarge?.copyWith(
               color: theme.colorScheme.primary,
               fontWeight: FontWeight.bold,
@@ -33,15 +34,15 @@ class ProtocolsView extends StatelessWidget {
             context,
             icon: Icons.cast,
             title: 'Google Cast V2 Engine',
-            subtitle: 'Используется Google Pixel, Motorola, Nothing Phone и устройствами Android',
+            subtitle: strings.googleCastDesc,
             isActive: settings.enableGoogleCast,
             statusBadge: 'mDNS + TLS :${settings.castPort}',
             color: Colors.blueAccent,
             details: [
-              _detailRow('Служба обнаружения', 'mDNS (_googlecast._tcp.local) на ${provider.localIp}'),
-              _detailRow('Порт управления', '${settings.castPort} (TLS Socket)'),
-              _detailRow('Сертификат шифрования', 'RSA 2048-bit (assets/certs/cert.pem)'),
-              _detailRow('Поддерживаемые каналы', 'Heartbeat, Connection, Receiver, WebRTC Stream'),
+              _detailRow(strings.discoveryServiceLabel, 'mDNS (_googlecast._tcp.local) on ${provider.localIp}'),
+              _detailRow(strings.controlPortLabel, '${settings.castPort} (TLS Socket)'),
+              _detailRow(strings.cryptoCertLabel, 'RSA 2048-bit (assets/certs/cert.pem)'),
+              _detailRow(strings.supportedChannelsLabel, 'Heartbeat, Connection, Receiver, WebRTC Stream'),
             ],
             onToggle: (val) {
               settings.setEnableGoogleCast(val);
@@ -55,15 +56,15 @@ class ProtocolsView extends StatelessWidget {
             context,
             icon: Icons.apple,
             title: 'Apple AirPlay (Screen Mirroring & Audio)',
-            subtitle: 'Используется iPhone, iPad, Mac (Повтор экрана)',
+            subtitle: strings.airplayDesc,
             isActive: true,
             statusBadge: 'RTSP :7000 | RAOP :7000',
             color: Colors.orangeAccent,
             details: [
-              _detailRow('Служба обнаружения', 'Bonjour / mDNS (_airplay._tcp & _raop._tcp)'),
-              _detailRow('Порт зеркалирования', '7000 (RTSP / AirPlay)'),
-              _detailRow('Аудио протокол', 'RAOP (Remote Audio Output Protocol)'),
-              _detailRow('Аппаратный рендеринг', 'DirectX 11 (Hardware Texture DXVA2)'),
+              _detailRow(strings.discoveryServiceLabel, 'Bonjour / mDNS (_airplay._tcp & _raop._tcp)'),
+              _detailRow(strings.mirrorPortLabel, '7000 (RTSP / AirPlay)'),
+              _detailRow(strings.audioProtocolLabel, 'RAOP (Remote Audio Output Protocol)'),
+              _detailRow(strings.hwRenderingLabel, 'DirectX 11 (Hardware Texture DXVA2)'),
             ],
             onToggle: null,
           ),
@@ -74,15 +75,15 @@ class ProtocolsView extends StatelessWidget {
             context,
             icon: Icons.settings_remote,
             title: 'Miracast (Wi-Fi Display / RTSP)',
-            subtitle: 'Используется Samsung Smart View, Xiaomi (HyperOS), Honor, Huawei, OnePlus',
+            subtitle: strings.miracastDesc,
             isActive: settings.enableMiracast,
             statusBadge: 'RTSP :${settings.miracastPort} | RTP :${settings.rtpPort}',
             color: Colors.deepPurpleAccent,
             details: [
-              _detailRow('RTSP порт сигнализации', '${settings.miracastPort} (TCP)'),
-              _detailRow('RTP порт видеопотока', '${settings.rtpPort} (UDP)'),
-              _detailRow('Формат видео', 'H.264 MPEG-TS / AAC-LC'),
-              _detailRow('Тип подключения', 'Wi-Fi Direct / Miracast over Infrastructure (MS-MICE)'),
+              _detailRow(strings.controlPortLabel, '${settings.miracastPort} (RTSP TCP)'),
+              _detailRow('RTP Video Port', '${settings.rtpPort} (UDP)'),
+              _detailRow(strings.videoFormatLabel, 'H.264 MPEG-TS / AAC-LC'),
+              _detailRow(strings.connTypeLabel, 'Wi-Fi Direct / Miracast over Infrastructure (MS-MICE)'),
             ],
             onToggle: (val) {
               settings.setEnableMiracast(val);
