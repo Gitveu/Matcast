@@ -280,9 +280,7 @@ class _SettingsViewState extends State<SettingsView> {
                       Switch(
                         value: settings.enableGoogleCast,
                         onChanged: (val) {
-                          final receiver = context.read<ReceiverProvider>();
-                          settings.setEnableGoogleCast(val);
-                          receiver.stopReceiver().then((_) => receiver.startReceiver());
+                          context.read<ReceiverProvider>().toggleGoogleCast(val);
                         },
                       ),
                     ],
@@ -318,7 +316,7 @@ class _SettingsViewState extends State<SettingsView> {
                       Switch(
                         value: settings.enableAirplay,
                         onChanged: (val) {
-                          settings.setEnableAirplay(val);
+                          context.read<ReceiverProvider>().toggleAirplay(val);
                         },
                       ),
                     ],
@@ -354,9 +352,7 @@ class _SettingsViewState extends State<SettingsView> {
                       Switch(
                         value: settings.enableMiracast,
                         onChanged: (val) {
-                          final receiver = context.read<ReceiverProvider>();
-                          settings.setEnableMiracast(val);
-                          receiver.stopReceiver().then((_) => receiver.startReceiver());
+                          context.read<ReceiverProvider>().toggleMiracast(val);
                         },
                       ),
                     ],

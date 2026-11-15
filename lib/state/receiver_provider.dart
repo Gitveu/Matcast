@@ -403,12 +403,14 @@ class ReceiverProvider with ChangeNotifier {
       }
 
       // 3. Start mDNS Service Broadcast
-      await _mdnsService.startBroadcast(
-        friendlyName: settings.receiverName,
-        deviceId: _deviceId,
-        castPort: settings.castPort,
-        rtspPort: settings.miracastPort,
-      );
+      if (settings.enableGoogleCast) {
+        await _mdnsService.startBroadcast(
+          friendlyName: settings.receiverName,
+          deviceId: _deviceId,
+          castPort: settings.castPort,
+          rtspPort: settings.miracastPort,
+        );
+      }
 
       // 4. Start SSDP / UPnP Discovery Service
       await _ssdpService.start(
@@ -582,6 +584,54 @@ class ReceiverProvider with ChangeNotifier {
 
   void toggleHud() {
     _state = _state.copyWith(showHud: !_state.showHud);
+    notifyListeners();
+  }
+
+  Future<void> toggleGoogleCast(bool enabled) async {
+    settings.setEnableGoogleCast(enabled);
+    if (!enabled) {
+      await _mdnsService.stopBroadcast(sendGoodbye: true);
+      addProtocolLog('Google Cast Disabled', {'status': 'mDNS stopped & Goodbye announced'});
+    } else {
+      _localIp = await NetworkService.getPrimaryLocalIp();
+      _deviceId = NetworkService.generateDeviceId(settings.receiverName);
+      await _mdnsService.startBroadcast(
+        friendlyName: settings.receiverName,
+        deviceId: _deviceId,
+        castPort: settings.castPort,
+        rtspPort: settings.miracastPort,
+      );
+      addProtocolLog('Google Cast Enabled', {'status': 'mDNS broadcasting active'});
+    }
+    notifyListeners();
+  }
+
+  Future<void> toggleMiracast(bool enabled) async {
+    settings.setEnableMiracast(enabled);
+    if (!enabled) {
+      await _rtspServer?.stop();
+      _rtspServer = null;
+      addProtocolLog('Miracast Disabled', {'status': 'RTSP server stopped'});
+    } else {
+      if (_rtspServer == null) {
+        _rtspServer = RtspMiracastServer(
+          port: settings.miracastPort,
+          rtpPort: settings.rtpPort,
+          onDeviceConnected: _onDeviceConnected,
+          onDeviceDisconnected: _onDeviceDisconnected,
+          onProtocolEvent: _onProtocolEvent,
+          onStreamAvailable: _onStreamAvailable,
+        );
+        await _rtspServer!.start();
+        addProtocolLog('Miracast Enabled', {'port': settings.miracastPort});
+      }
+    }
+    notifyListeners();
+  }
+
+  Future<void> toggleAirplay(bool enabled) async {
+    settings.setEnableAirplay(enabled);
+    addProtocolLog('AirPlay ${enabled ? "Enabled" : "Disabled"}', {'port': 7000});
     notifyListeners();
   }
 
