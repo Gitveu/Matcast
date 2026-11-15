@@ -107,5 +107,11 @@ class AppStrings {
   String get connectedLabel => isEn ? 'Connected' : 'Подключено';
   String get btnCancel => isEn ? 'Cancel' : 'Отмена';
   String get btnSave => isEn ? 'Save' : 'Сохранить';
+  String get restartRequiredTitle => isEn ? 'Restart Required' : 'Требуется перезапуск';
+  String get restartRequiredMessage => isEn
+      ? 'To broadcast the new receiver name to phones and AirPlay, the application needs to restart.'
+      : 'Чтобы применить новое имя приёмника в сети для телефонов и AirPlay, приложению требуется перезапуск.';
+  String get btnRestartNow => isEn ? 'Restart Now' : 'Перезапустить сейчас';
+  String get btnLater => isEn ? 'Later' : 'Позже';
   String get copiedSnackbar => isEn ? 'Logs copied to clipboard' : 'Журнал скопирован в буфер обмена';
 }

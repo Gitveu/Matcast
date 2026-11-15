@@ -7,6 +7,7 @@ import 'network_service.dart';
 class MdnsService {
   RawDatagramSocket? _rawMulticastSocket;
   RawDatagramSocket? _unicastSendSocket;
+  final Set<String> _localIps = {'127.0.0.1', '::1', '0.0.0.0'};
   Timer? _announcementTimer;
   bool _isBroadcasting = false;
   bool _isStreamingActive = false;
@@ -71,6 +72,16 @@ class MdnsService {
     _lastDeviceId = formattedId;
     _lastLocalIp = localIp;
     _lastCastPort = castPort;
+
+    _localIps.add(localIp);
+    try {
+      final ifaces = await NetworkInterface.list(includeLoopback: true);
+      for (final iface in ifaces) {
+        for (final addr in iface.addresses) {
+          _localIps.add(addr.address);
+        }
+      }
+    } catch (_) {}
 
     debugPrint('[mDNS] Broadcasting for $displayName on $localIp:$castPort');
 
@@ -177,17 +188,14 @@ class MdnsService {
     String localIp,
     int port,
   ) {
-    if (datagram.address.address == localIp || datagram.address.address == '127.0.0.1') {
+    if (_localIps.contains(datagram.address.address)) {
       return;
     }
     try {
       final packet = _buildCastMdnsPacket(displayName, friendlyName, deviceId, localIp, port, ttl: 120);
-      // 1. Respond directly to querying device unicast
+      // Respond directly to the querying client over unicast (bypasses router multicast filtering)
       _unicastSendSocket?.send(packet, datagram.address, datagram.port);
       _rawMulticastSocket?.send(packet, datagram.address, datagram.port);
-      // 2. Respond to mDNS multicast group so standard multicast queriers receive it
-      _unicastSendSocket?.send(packet, InternetAddress('224.0.0.251'), 5353);
-      _rawMulticastSocket?.send(packet, InternetAddress('224.0.0.251'), 5353);
     } catch (_) {}
   }
 
