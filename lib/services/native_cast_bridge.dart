@@ -8,6 +8,7 @@ typedef OnStreamStateChanged = void Function({
   required bool isStreaming,
   int? textureId,
   String? deviceName,
+  String? clientIp,
   int? width,
   int? height,
   int? fps,
@@ -34,6 +35,7 @@ class NativeCastBridge {
   bool get isCurrentlyStreaming => _isCurrentlyStreaming;
   int? _activeTextureId;
   String _activeDeviceName = 'Android Cast';
+  String _activeClientIp = '';
   int _width = 1920;
   int _height = 1080;
   DateTime _lastDecodeLog = DateTime.fromMillisecondsSinceEpoch(0);
@@ -125,7 +127,8 @@ class NativeCastBridge {
       switch (type) {
         case 'OnSetup':
           if (data['name'] != null) {
-            _activeDeviceName = '${data['name']} (${data['type'] ?? 'Cast'})';
+            _activeClientIp = data['name'].toString().trim();
+            _activeDeviceName = _activeClientIp;
           }
           break;
 
@@ -153,6 +156,7 @@ class NativeCastBridge {
             'resolution': '${_width}x$_height',
             'codec': codec,
             'device': _activeDeviceName,
+            'clientIp': _activeClientIp,
           });
 
           // Resync hardware texture pipeline in cast_plugin
@@ -165,6 +169,7 @@ class NativeCastBridge {
             isStreaming: true,
             textureId: _activeTextureId,
             deviceName: _activeDeviceName,
+            clientIp: _activeClientIp,
             width: _width,
             height: _height,
             fps: 60,
@@ -196,6 +201,7 @@ class NativeCastBridge {
           _log('Stream Ended ($type)', {});
           _isCurrentlyStreaming = false;
           _activeTextureId = null;
+          _activeClientIp = '';
           onStreamStateChanged(isStreaming: false);
           break;
 

@@ -4,14 +4,26 @@ import '../../models/stream_stats.dart';
 class StreamHud extends StatelessWidget {
   final StreamStats stats;
   final String deviceName;
+  final Duration? streamDuration;
   final VoidCallback? onClose;
 
   const StreamHud({
     super.key,
     required this.stats,
     required this.deviceName,
+    this.streamDuration,
     this.onClose,
   });
+
+  static String _formatDuration(Duration d) {
+    final hours = d.inHours;
+    final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    if (hours > 0) {
+      return '$hours:$minutes:$seconds';
+    }
+    return '$minutes:$seconds';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,6 +80,12 @@ class StreamHud extends StatelessWidget {
           _divider(),
           const SizedBox(width: 10),
           _metric('LATENCY', '~${stats.latencyMs} ms'),
+          if (streamDuration != null) ...[
+            const SizedBox(width: 10),
+            _divider(),
+            const SizedBox(width: 10),
+            _metric('TIME', _formatDuration(streamDuration!)),
+          ],
           if (onClose != null) ...[
             const SizedBox(width: 8),
             InkWell(

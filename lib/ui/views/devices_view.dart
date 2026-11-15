@@ -1,11 +1,96 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../models/cast_device.dart';
 import '../../state/receiver_provider.dart';
 
-class DevicesView extends StatelessWidget {
+class DevicesView extends StatefulWidget {
   const DevicesView({super.key});
+
+  @override
+  State<DevicesView> createState() => _DevicesViewState();
+}
+
+class _DevicesViewState extends State<DevicesView> {
+  Timer? _durationTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _durationTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _durationTimer?.cancel();
+    super.dispose();
+  }
+
+  String _formatDuration(Duration d) {
+    final hours = d.inHours;
+    final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    if (hours > 0) {
+      return '$hours:$minutes:$seconds';
+    }
+    return '$minutes:$seconds';
+  }
+
+  void _showRenameDialog(BuildContext context, ReceiverProvider provider, CastDevice device) {
+    final strings = provider.settings.tr(context);
+    final initial = provider.settings.getDeviceAlias(device.ipAddress) ??
+        (device.name.startsWith('Android Device') ? '' : device.name);
+    final controller = TextEditingController(text: initial);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(strings.renameDeviceTitle),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'IP: ${device.ipAddress}',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              decoration: InputDecoration(
+                labelText: strings.renameDeviceTitle,
+                hintText: strings.renameDeviceHint,
+                border: const OutlineInputBorder(),
+              ),
+              onSubmitted: (_) {
+                provider.renameDevice(device.ipAddress, controller.text);
+                Navigator.pop(ctx);
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(strings.btnCancel),
+          ),
+          FilledButton(
+            onPressed: () {
+              provider.renameDevice(device.ipAddress, controller.text);
+              Navigator.pop(ctx);
+            },
+            child: Text(strings.btnSave),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -134,7 +219,7 @@ class DevicesView extends StatelessWidget {
                     ),
                   )
                 else
-                  ...state.history.map((device) => _buildHistoryTile(context, device)),
+                  ...state.history.map((device) => _buildHistoryTile(context, provider, device)),
               ],
             ),
           ),
@@ -204,6 +289,7 @@ class DevicesView extends StatelessWidget {
     CastDevice device,
   ) {
     final theme = Theme.of(context);
+    final strings = provider.settings.tr(context);
 
     return Card(
       elevation: 2,
@@ -230,13 +316,25 @@ class DevicesView extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        device.name,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              device.name,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined, size: 18),
+                            tooltip: strings.renameDeviceTitle,
+                            onPressed: () => _showRenameDialog(context, provider, device),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       Text(
                         'IP: ${device.ipAddress}:${device.port}',
                         style: theme.textTheme.bodySmall?.copyWith(
@@ -265,11 +363,13 @@ class DevicesView extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.access_time, size: 16, color: Colors.green),
+                    const Icon(Icons.timer_outlined, size: 16, color: Colors.green),
                     const SizedBox(width: 6),
                     Text(
-                      'Подключено: ${device.connectedAt.hour.toString().padLeft(2, '0')}:${device.connectedAt.minute.toString().padLeft(2, '0')}',
-                      style: theme.textTheme.bodySmall,
+                      '${strings.durationLabel}: ${_formatDuration(DateTime.now().difference(device.connectedAt))}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
@@ -279,7 +379,7 @@ class DevicesView extends StatelessWidget {
                     foregroundColor: theme.colorScheme.onErrorContainer,
                   ),
                   icon: const Icon(Icons.close, size: 16),
-                  label: Text(provider.settings.tr(context).btnDisconnect),
+                  label: Text(strings.btnDisconnect),
                   onPressed: () => provider.disconnectActiveDevice(),
                 ),
               ],
@@ -290,8 +390,9 @@ class DevicesView extends StatelessWidget {
     );
   }
 
-  Widget _buildHistoryTile(BuildContext context, CastDevice device) {
+  Widget _buildHistoryTile(BuildContext context, ReceiverProvider provider, CastDevice device) {
     final theme = Theme.of(context);
+    final strings = provider.settings.tr(context);
 
     return Card(
       elevation: 0,
@@ -301,9 +402,20 @@ class DevicesView extends StatelessWidget {
         leading: const Icon(Icons.devices_other),
         title: Text(device.name, style: const TextStyle(fontWeight: FontWeight.w600)),
         subtitle: Text('${device.ipAddress} • ${device.protocol.label}'),
-        trailing: Text(
-          '${device.connectedAt.hour.toString().padLeft(2, '0')}:${device.connectedAt.minute.toString().padLeft(2, '0')}',
-          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '${device.connectedAt.hour.toString().padLeft(2, '0')}:${device.connectedAt.minute.toString().padLeft(2, '0')}',
+              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
+            ),
+            const SizedBox(width: 4),
+            IconButton(
+              icon: const Icon(Icons.edit_outlined, size: 16),
+              tooltip: strings.renameDeviceTitle,
+              onPressed: () => _showRenameDialog(context, provider, device),
+            ),
+          ],
         ),
       ),
     );

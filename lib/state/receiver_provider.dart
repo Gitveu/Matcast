@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:window_manager/legacy.dart';
 import '../models/cast_device.dart';
@@ -92,6 +93,7 @@ class ReceiverProvider with ChangeNotifier {
     required bool isStreaming,
     int? textureId,
     String? deviceName,
+    String? clientIp,
     int? width,
     int? height,
     int? fps,
@@ -104,16 +106,23 @@ class ReceiverProvider with ChangeNotifier {
         windowManager.focus();
       } catch (_) {}
 
+      final effectiveIp = (clientIp != null && clientIp.isNotEmpty) ? clientIp : _localIp;
+      final alias = settings.getDeviceAlias(effectiveIp);
+      String displayName = alias ?? deviceName ?? 'Android Device';
+      if (alias == null && (displayName.isEmpty || displayName == effectiveIp || displayName.contains('(googlecast)'))) {
+        displayName = 'Android Device ($effectiveIp)';
+      }
+
       final activeDev = CastDevice(
-        id: 'dev_${DateTime.now().millisecondsSinceEpoch}',
-        name: deviceName ?? 'Android Device',
-        ipAddress: _localIp,
+        id: 'dev_${effectiveIp.replaceAll('.', '_')}',
+        name: displayName,
+        ipAddress: effectiveIp,
         port: settings.castPort,
         protocol: CastProtocol.googleCast,
         connectedAt: DateTime.now(),
       );
       final updatedHistory = List<CastDevice>.from(_state.history);
-      updatedHistory.removeWhere((d) => d.name == activeDev.name);
+      updatedHistory.removeWhere((d) => d.id == activeDev.id || d.ipAddress == activeDev.ipAddress);
       updatedHistory.insert(0, activeDev);
 
       _fpsFrameCount = 0;
@@ -134,6 +143,23 @@ class ReceiverProvider with ChangeNotifier {
       );
       if (settings.autoFullScreenOnConnect) {
         setFullScreen(true);
+      }
+
+      // Asynchronous reverse DNS lookup to discover phone model / hostname if no alias set
+      if (alias == null && effectiveIp.isNotEmpty && effectiveIp != _localIp) {
+        InternetAddress(effectiveIp).reverse().timeout(const Duration(milliseconds: 1500)).then((rev) {
+          if (rev.host.isNotEmpty && rev.host != effectiveIp) {
+            final clean = rev.host.replaceAll(RegExp(r'\.(lan|local|home|broadband)$', caseSensitive: false), '');
+            if (clean.isNotEmpty && settings.getDeviceAlias(effectiveIp) == null) {
+              if (_state.activeDevice?.ipAddress == effectiveIp) {
+                _state = _state.copyWith(
+                  activeDevice: _state.activeDevice!.copyWith(name: clean),
+                );
+                notifyListeners();
+              }
+            }
+          }
+        }).catchError((_) {});
       }
     } else {
       _stopFpsWatchdog();
@@ -188,7 +214,14 @@ class ReceiverProvider with ChangeNotifier {
     int? renderTimeUs,
   }) {
     final now = DateTime.now();
-    _fpsFrameCount++;
+
+    // Only count actual rendered video frames (renderTimeUs > 0)
+    final bool isRenderFrame = (renderTimeUs != null && renderTimeUs > 0);
+    if (isRenderFrame) {
+      _fpsFrameCount++;
+      _lastRenderUnits = renderTimeUs;
+    }
+
     final elapsedFpsMs = now.difference(_lastFpsSampleTime).inMilliseconds;
     if (elapsedFpsMs >= 600) {
       _measuredFps = (_fpsFrameCount * 1000.0) / elapsedFpsMs;
@@ -208,10 +241,6 @@ class ReceiverProvider with ChangeNotifier {
       _lastDecodeUnits = decodeTimeUs;
     }
 
-    if (renderTimeUs != null && renderTimeUs > 0) {
-      _lastRenderUnits = renderTimeUs;
-    }
-
     // render is in 100ns units: 10,000 units = 1ms. E.g. 233,300 -> 23.3ms.
     // Total end-to-end estimated latency including network transmission & buffer:
     int baseLatency = (_lastRenderUnits / 10000.0).round();
@@ -224,15 +253,17 @@ class ReceiverProvider with ChangeNotifier {
     // Add realistic network transmission delay (~10-14ms)
     int latency = baseLatency + 10;
 
+    final maxFps = settings.targetFps.toDouble();
     double displayFps = _measuredFps;
     if (displayFps <= 0.0 && _fpsFrameCount > 0 && elapsedFpsMs > 0) {
       displayFps = (_fpsFrameCount * 1000.0) / elapsedFpsMs;
     }
+    displayFps = displayFps.clamp(0.0, maxFps);
 
     _state = _state.copyWith(
       stats: _state.stats.copyWith(
         latencyMs: latency,
-        fps: double.parse(displayFps.clamp(0.0, 120.0).toStringAsFixed(0)),
+        fps: double.parse(displayFps.toStringAsFixed(0)),
         resolution: '${settings.targetWidth}x${settings.targetHeight}',
       ),
     );
@@ -332,6 +363,13 @@ class ReceiverProvider with ChangeNotifier {
       if (settings.enableGoogleCast) {
         _castServer = CastProtocolServer(
           port: settings.castPort,
+          isBusy: (incomingIp) {
+            // Guard active streaming session: reject incoming connect from different IP
+            if (_state.status == ReceiverStatus.streaming && _state.activeDevice != null) {
+              return _state.activeDevice!.ipAddress != incomingIp;
+            }
+            return false;
+          },
           onDeviceConnected: _onDeviceConnected,
           onDeviceDisconnected: _onDeviceDisconnected,
           onProtocolEvent: _onProtocolEvent,
@@ -403,19 +441,47 @@ class ReceiverProvider with ChangeNotifier {
   }
 
   void _onDeviceConnected(CastDevice device) {
+    final alias = settings.getDeviceAlias(device.ipAddress);
+    final friendlyName = alias ?? device.name;
+    final namedDevice = device.copyWith(name: friendlyName);
+
     final updatedHistory = List<CastDevice>.from(_state.history);
-    updatedHistory.removeWhere((d) => d.id == device.id);
-    updatedHistory.insert(0, device);
+    updatedHistory.removeWhere((d) => d.id == namedDevice.id || d.ipAddress == namedDevice.ipAddress);
+    updatedHistory.insert(0, namedDevice);
 
     _state = _state.copyWith(
-      activeDevice: device,
+      activeDevice: namedDevice,
       history: updatedHistory,
     );
     _addLog('Device Connected', {
-      'name': device.name,
-      'ip': device.ipAddress,
-      'protocol': device.protocol.label,
+      'name': namedDevice.name,
+      'ip': namedDevice.ipAddress,
+      'protocol': namedDevice.protocol.label,
     });
+    notifyListeners();
+  }
+
+  void renameDevice(String ipAddress, String newAlias) {
+    settings.setDeviceAlias(ipAddress, newAlias);
+    final alias = settings.getDeviceAlias(ipAddress);
+    final newName = (alias != null && alias.isNotEmpty) ? alias : 'Android Device ($ipAddress)';
+
+    CastDevice? updatedActive = _state.activeDevice;
+    if (updatedActive != null && updatedActive.ipAddress == ipAddress) {
+      updatedActive = updatedActive.copyWith(name: newName);
+    }
+
+    final updatedHistory = _state.history.map((d) {
+      if (d.ipAddress == ipAddress) {
+        return d.copyWith(name: newName);
+      }
+      return d;
+    }).toList();
+
+    _state = _state.copyWith(
+      activeDevice: updatedActive,
+      history: updatedHistory,
+    );
     notifyListeners();
   }
 

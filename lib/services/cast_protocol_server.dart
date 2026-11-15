@@ -154,6 +154,7 @@ class CastMessageData {
 class CastProtocolServer {
   SecureServerSocket? _server;
   final int port;
+  final bool Function(String incomingIp)? isBusy;
   final Function(CastDevice) onDeviceConnected;
   final Function(CastDevice) onDeviceDisconnected;
   final Function(String event, Map<String, dynamic> data) onProtocolEvent;
@@ -166,6 +167,7 @@ class CastProtocolServer {
 
   CastProtocolServer({
     this.port = 8009,
+    this.isBusy,
     required this.onDeviceConnected,
     required this.onDeviceDisconnected,
     required this.onProtocolEvent,
@@ -215,10 +217,31 @@ class CastProtocolServer {
       return;
     }
 
+    if (isBusy?.call(clientIp) == true) {
+      debugPrint('[CastProtocolServer] Connection rejected: Receiver is busy with active stream. Client: $clientIp');
+      onProtocolEvent('Connection Rejected', {
+        'clientIp': clientIp,
+        'reason': 'Receiver is busy streaming with another device',
+      });
+      socket.destroy();
+      return;
+    }
+
     final clientPort = socket.remotePort;
+    String initialName = 'Android Device ($clientIp)';
+    try {
+      final reverse = await InternetAddress(clientIp).reverse().timeout(const Duration(milliseconds: 1200));
+      if (reverse.host.isNotEmpty && reverse.host != clientIp) {
+        final clean = reverse.host.replaceAll(RegExp(r'\.(lan|local|home|broadband)$', caseSensitive: false), '');
+        if (clean.isNotEmpty) {
+          initialName = clean;
+        }
+      }
+    } catch (_) {}
+
     final device = CastDevice(
       id: 'android_${clientIp.replaceAll('.', '_')}',
-      name: 'Android Device ($clientIp)',
+      name: initialName,
       ipAddress: clientIp,
       port: clientPort,
       protocol: CastProtocol.googleCast,

@@ -20,6 +20,7 @@ class SettingsProvider with ChangeNotifier {
   int _targetHeight = 1080;
   int _targetFps = 60;
   AppLanguage _appLanguage = AppLanguage.system;
+  Map<String, String> _deviceAliases = {};
 
   SettingsProvider() {
     _loadSettings();
@@ -71,6 +72,11 @@ class SettingsProvider with ChangeNotifier {
             _appLanguage = AppLanguage.values[lIdx];
           }
         }
+        if (map['deviceAliases'] != null && map['deviceAliases'] is Map) {
+          _deviceAliases = Map<String, String>.from(
+            (map['deviceAliases'] as Map).map((k, v) => MapEntry(k.toString(), v.toString())),
+          );
+        }
         return;
       }
     } catch (_) {}
@@ -96,6 +102,7 @@ class SettingsProvider with ChangeNotifier {
         'targetHeight': _targetHeight,
         'targetFps': _targetFps,
         'appLanguage': _appLanguage.index,
+        'deviceAliases': _deviceAliases,
       }));
     } catch (_) {}
   }
@@ -120,6 +127,20 @@ class SettingsProvider with ChangeNotifier {
   int get targetFps => _targetFps;
   AppLanguage get appLanguage => _appLanguage;
   String get resolutionLabel => '${_targetWidth}x$_targetHeight';
+  Map<String, String> get deviceAliases => Map.unmodifiable(_deviceAliases);
+
+  String? getDeviceAlias(String ip) => _deviceAliases[ip];
+
+  void setDeviceAlias(String ip, String alias) {
+    final clean = alias.trim();
+    if (clean.isEmpty) {
+      _deviceAliases.remove(ip);
+    } else {
+      _deviceAliases[ip] = clean;
+    }
+    _saveSettings();
+    notifyListeners();
+  }
 
   AppStrings tr(BuildContext context) => AppStrings(_appLanguage, context);
 
